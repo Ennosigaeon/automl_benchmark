@@ -1,0 +1,11 @@
+scikit-learn
+scipy
+matplotlib
+networkx
+hyperopt
+numpy
+hpolib2
+ConfigSpace
+openml
+psycopg2
+auto-sklearn

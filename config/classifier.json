@@ -1,0 +1,485 @@
+{
+  "sklearn.naive_bayes.BernoulliNB": {
+    "alpha": {
+      "type": "uniform_float",
+      "lower": 1e-2,
+      "upper": 100,
+      "default_value": 1
+    },
+    "fit_prior": {
+      "type": "categorical",
+      "choices": [
+        true,
+        false
+      ],
+      "default_value": true
+    }
+  },
+  "sklearn.naive_bayes.GaussianNB": {
+  },
+  "sklearn.naive_bayes.MultinomialNB": {
+    "alpha": {
+      "type": "uniform_float",
+      "lower": 1e-2,
+      "upper": 100,
+      "default_value": 1,
+      "log": true
+    },
+    "fit_prior": {
+      "type": "categorical",
+      "choices": [
+        true,
+        false
+      ],
+      "default_value": true
+    }
+  },
+  "sklearn.tree.DecisionTreeClassifier": {
+    "criterion": {
+      "type": "categorical",
+      "choices": [
+        "gini",
+        "entropy"
+      ],
+      "default_value": "gini"
+    },
+    "max_depth": {
+      "type": "uniform_float",
+      "lower": 0.0,
+      "upper": 2.0,
+      "default_value": 0.5
+    },
+    "min_samples_split": {
+      "type": "uniform_int",
+      "lower": 2,
+      "upper": 20,
+      "default_value": 2
+    },
+    "min_samples_leaf": {
+      "type": "uniform_int",
+      "lower": 1,
+      "upper": 20,
+      "default_value": 1
+    }
+  },
+  "sklearn.ensemble.ExtraTreesClassifier": {
+    "criterion": {
+      "type": "categorical",
+      "choices": [
+        "gini",
+        "entropy"
+      ],
+      "default_value": "gini"
+    },
+    "max_features": {
+      "type": "uniform_float",
+      "lower": 0.0,
+      "upper": 1.0,
+      "default_value": 0.5
+    },
+    "min_samples_split": {
+      "type": "uniform_int",
+      "lower": 2,
+      "upper": 20,
+      "default_value": 2
+    },
+    "min_samples_leaf": {
+      "type": "uniform_int",
+      "lower": 1,
+      "upper": 20,
+      "default_value": 1
+    },
+    "bootstrap": {
+      "type": "categorical",
+      "choices": [
+        true,
+        false
+      ],
+      "default_value": false
+    }
+  },
+  "sklearn.ensemble.GradientBoostingClassifier": {
+    "n_estimators": {
+      "type": "uniform_int",
+      "lower": 50,
+      "upper": 500,
+      "default_value": 100
+    },
+    "learning_rate": {
+      "type": "uniform_float",
+      "lower": 0.01,
+      "upper": 1.0,
+      "default_value": 0.1,
+      "log": true
+    },
+    "max_depth": {
+      "type": "uniform_int",
+      "lower": 1,
+      "upper": 10,
+      "default_value": 3
+    },
+    "criterion": {
+      "type": "categorical",
+      "choices": [
+        "friedman_mse",
+        "mse",
+        "mae"
+      ],
+      "default_value": "mse"
+    },
+    "min_samples_split": {
+      "type": "uniform_int",
+      "lower": 2,
+      "upper": 20,
+      "default_value": 2
+    },
+    "min_samples_leaf": {
+      "type": "uniform_int",
+      "lower": 1,
+      "upper": 20,
+      "default_value": 1
+    },
+    "subsample": {
+      "type": "uniform_float",
+      "lower": 0.01,
+      "upper": 1.0,
+      "default_value": 0.1
+    },
+    "max_features": {
+      "type": "uniform_float",
+      "lower": 0.01,
+      "upper": 1.0,
+      "default_value": 1.0
+    }
+  },
+  "sklearn.ensemble.RandomForestClassifier": {
+    "criterion": {
+      "type": "categorical",
+      "choices": [
+        "gini",
+        "entropy"
+      ],
+      "default_value": "gini"
+    },
+    "max_features": {
+      "type": "uniform_float",
+      "lower": 0.0,
+      "upper": 1.0,
+      "default_value": 0.5
+    },
+    "min_samples_split": {
+      "type": "uniform_int",
+      "lower": 2,
+      "upper": 20,
+      "default_value": 2
+    },
+    "min_samples_leaf": {
+      "type": "uniform_int",
+      "lower": 1,
+      "upper": 20,
+      "default_value": 1
+    },
+    "bootstrap": {
+      "type": "categorical",
+      "choices": [
+        true,
+        false
+      ],
+      "default_value": true
+    }
+  },
+  "sklearn.neighbors.KNeighborsClassifier": {
+    "n_neighbors": {
+      "type": "uniform_int",
+      "lower": 1,
+      "upper": 100,
+      "default_value": 1,
+      "log": true
+    },
+    "weights": {
+      "type": "categorical",
+      "choices": [
+        "uniform",
+        "distance"
+      ],
+      "default_value": "uniform"
+    },
+    "p": {
+      "type": "categorical",
+      "choices": [
+        1,
+        2
+      ],
+      "default_value": 2
+    }
+  },
+  "sklearn.discriminant_analysis.LinearDiscriminantAnalysis": {
+    "solver": {
+      "type": "categorical",
+      "choices": [
+        "svd",
+        "lsqr",
+        "eigen"
+      ],
+      "default_value": "svd"
+    },
+    "shrinkage": {
+      "type": "categorical",
+      "choices": [
+        null,
+        "auto",
+        "manual"
+      ],
+      "default_value": null,
+      "condition": {
+        "parent": "solver",
+        "value": [
+          "lsqr",
+          "eigen"
+        ]
+      }
+    },
+    "shrinkage_factor": {
+      "type": "uniform_float",
+      "lower": 0.0,
+      "upper": 1.0,
+      "default_value": 0.5,
+      "condition": {
+        "parent": "shrinkage",
+        "value": [
+          "manual"
+        ]
+      }
+    },
+    "n_components": {
+      "type": "uniform_int",
+      "lower": 1,
+      "upper": 250,
+      "default_value": 10
+    },
+    "tol": {
+      "type": "uniform_float",
+      "lower": 1e-5,
+      "upper": 1e-1,
+      "default_value": 1e-4,
+      "log": true
+    }
+  },
+  "sklearn.discriminant_analysis.QuadraticDiscriminantAnalysis": {
+    "reg_param": {
+      "type": "uniform_float",
+      "lower": 0.0,
+      "upper": 1.0,
+      "default_value": 0.0
+    }
+  },
+  "sklearn.svm.LinearSVC": {
+    "penalty": {
+      "type": "categorical",
+      "choices": [
+        "l1",
+        "l2"
+      ],
+      "default_value": "l2"
+    },
+    "loss": {
+      "type": "categorical",
+      "choices": [
+        "hinge",
+        "squared_hinge"
+      ],
+      "default_value": "squared_hinge"
+    },
+    "tol": {
+      "type": "uniform_float",
+      "lower": 1e-5,
+      "upper": 1e-1,
+      "default_value": 1e-4,
+      "log": true
+    },
+    "C": {
+      "type": "uniform_float",
+      "lower": 0.03125,
+      "upper": 32768,
+      "default_value": 1.0,
+      "log": true
+    }
+  },
+  "sklearn.svm.SVC": {
+    "C": {
+      "type": "uniform_float",
+      "lower": 0.03125,
+      "upper": 32768,
+      "default_value": 1.0,
+      "log": true
+    },
+    "kernel": {
+      "type": "categorical",
+      "choices": [
+        "rbf",
+        "poly",
+        "sigmoid"
+      ],
+      "default_value": "rbf"
+    },
+    "degree": {
+      "type": "uniform_int",
+      "lower": 2,
+      "upper": 5,
+      "default_value": 3,
+      "condition": {
+        "parent": "kernel",
+        "value": [
+          "poly"
+        ]
+      }
+    },
+    "gamma": {
+      "type": "uniform_float",
+      "lower": 3.0517578125e-05,
+      "upper": 8,
+      "default_value": 0.1,
+      "log": true
+    },
+    "coef0": {
+      "type": "uniform_float",
+      "lower": -1.0,
+      "upper": 1.0,
+      "default_value": 0.0,
+      "condition": {
+        "parent": "kernel",
+        "value": [
+          "poly",
+          "sigmoid"
+        ]
+      }
+    },
+    "shrinking": {
+      "type": "categorical",
+      "choices": [
+        true,
+        false
+      ],
+      "default_value": true
+    },
+    "tol": {
+      "type": "uniform_float",
+      "lower": 1e-5,
+      "upper": 1e-1,
+      "default_value": 1e-3,
+      "log": true
+    }
+  },
+  "sklearn.linear_model.passive_aggressive.PassiveAggressiveClassifier": {
+    "C": {
+      "type": "uniform_float",
+      "lower": 1e-5,
+      "upper": 10,
+      "default_value": 1.0,
+      "log": true
+    },
+    "loss": {
+      "type": "categorical",
+      "choices": [
+        "hinge",
+        "squared_hinge"
+      ],
+      "default_value": "hinge"
+    },
+    "tol": {
+      "type": "uniform_float",
+      "lower": 1e-5,
+      "upper": 1e-1,
+      "default_value": 1e-4,
+      "log": true
+    },
+    "average": {
+      "type": "categorical",
+      "choices": [
+        false,
+        true
+      ],
+      "default_value": false
+    }
+  },
+  "sklearn.linear_model.stochastic_gradient.SGDClassifier": {
+    "loss": {
+      "type": "categorical",
+      "choices": [
+        "hinge",
+        "log",
+        "modified_huber",
+        "squared_hinge",
+        "perceptron"
+      ],
+      "default_value": "log"
+    },
+    "penalty": {
+      "type": "categorical",
+      "choices": [
+        "l1",
+        "l2",
+        "elasticnet"
+      ],
+      "default_value": "l2"
+    },
+    "alpha": {
+      "type": "uniform_float",
+      "lower": 1e-7,
+      "upper": 1e-1,
+      "default_value": 0.0001,
+      "log": true
+    },
+    "l1_ratio": {
+      "type": "uniform_float",
+      "lower": 1e-9,
+      "upper": 1,
+      "default_value": 0.15,
+      "log": true
+    },
+    "tol": {
+      "type": "uniform_float",
+      "lower": 1e-5,
+      "upper": 1e-1,
+      "default_value": 1e-4,
+      "log": true
+    },
+    "epsilon": {
+      "type": "uniform_float",
+      "lower": 1e-5,
+      "upper": 1e-1,
+      "default_value": 1e-4,
+      "log": true
+    },
+    "learning_rate": {
+      "type": "categorical",
+      "choices": [
+        "optimal",
+        "invscaling",
+        "constant"
+      ],
+      "default_value": "invscaling"
+    },
+    "eta0": {
+      "type": "uniform_float",
+      "lower": 1e-7,
+      "upper": 1e-1,
+      "default_value": 0.01,
+      "log": true
+    },
+    "power_t": {
+      "type": "uniform_float",
+      "lower": 1e-5,
+      "upper": 1.0,
+      "default_value": 0.5
+    },
+    "average": {
+      "type": "categorical",
+      "choices": [
+        false,
+        true
+      ],
+      "default_value": false
+    }
+  }
+}

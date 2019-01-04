@@ -1,0 +1,112 @@
+{
+  "identity": {},
+  "sklearn.cluster.FeatureAgglomeration": {
+    "n_clusters": {
+      "type": "uniform_int",
+      "lower": 2,
+      "upper": 400,
+      "default_value": 25
+    },
+    "affinity": {
+      "type": "categorical",
+      "choices": [
+        "euclidean",
+        "manhattan",
+        "cosine"
+      ],
+      "default_value": "euclidean"
+    },
+    "linkage": {
+      "type": "categorical",
+      "choices": [
+        "ward",
+        "complete",
+        "average"
+      ],
+      "default_value": "ward"
+    },
+    "pooling_func": {
+      "type": "categorical",
+      "choices": [
+        "mean",
+        "median",
+        "max"
+      ],
+      "default_value": "mean"
+    }
+  },
+  "sklearn.decomposition.FastICA": {
+    "n_components": {
+      "type": "uniform_int",
+      "lower": 1,
+      "upper": 400,
+      "default_value": 25
+    },
+    "whiten": {
+      "type": "categorical",
+      "choices": [
+        true,
+        false
+      ],
+      "default_value": false
+    },
+    "algorithm": {
+      "type": "categorical",
+      "choices": [
+        "parallel",
+        "deflation"
+      ],
+      "default_value": "parallel"
+    },
+    "fun": {
+      "type": "categorical",
+      "choices": [
+        "logcosh",
+        "exp",
+        "cube"
+      ],
+      "default_value": "logcosh"
+    }
+  },
+  "sklearn.decomposition.PCA": {
+    "n_components": {
+      "type": "uniform_float",
+      "lower": 0.5,
+      "upper": 0.999,
+      "default_value": 0.75
+    },
+    "whiten": {
+      "type": "categorical",
+      "choices": [
+        true,
+        false
+      ],
+      "default_value": false
+    }
+  },
+  "sklearn.preprocessing.PolynomialFeatures": {
+    "degree": {
+      "type": "uniform_int",
+      "lower": 2,
+      "upper": 3,
+      "default_value": 2
+    }
+  },
+  "sklearn.preprocessing.MinMaxScaler": {},
+  "sklearn.preprocessing.Normalizer": {},
+  "sklearn.preprocessing.RobustScaler": {
+    "q_min": {
+      "type": "uniform_float",
+      "lower": 0.001,
+      "upper": 0.3,
+      "default_value": 0.25
+    },
+    "q_max": {
+      "type": "uniform_float",
+      "lower": 0.7,
+      "upper": 0.999,
+      "default_value": 0.75
+    }
+  },
+  "sklearn.preprocessing.StandardScaler": {}
+}

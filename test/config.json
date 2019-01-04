@@ -1,0 +1,78 @@
+{
+  "sklearn.svm.SVC": {
+    "kernel": {
+      "type": "categorical",
+      "choices": [
+        "linear",
+        "rbf",
+        "poly",
+        "sigmoid"
+      ],
+      "default_value": "poly"
+    },
+    "degree": {
+      "type": "uniform_int",
+      "lower": 1,
+      "upper": 5,
+      "condition": {
+        "parent": "kernel",
+        "value": [
+          "poly"
+        ]
+      }
+    },
+    "gamma": {
+      "type": "categorical",
+      "choices": [
+        "auto",
+        "value"
+      ],
+      "condition": {
+        "parent": "kernel",
+        "value": [
+          "rbf",
+          "poly",
+          "sigmoid"
+        ]
+      }
+    },
+    "gamma_value": {
+      "type": "uniform_float",
+      "lower": 0.0001,
+      "upper": 8,
+      "default_value": 1.0,
+      "condition": {
+        "parent": "gamma",
+        "value": [
+          "value"
+        ]
+      }
+    },
+    "C": {
+      "type": "uniform_float",
+      "lower": 0.001,
+      "upper": 1000.0,
+      "default_value": 1.0
+    },
+    "coef0": {
+      "type": "uniform_float",
+      "lower": 0.0,
+      "upper": 10.0,
+      "default_value": 0.0,
+      "condition": {
+        "parent": "kernel",
+        "value": [
+          "poly",
+          "sigmoid"
+        ]
+      }
+    },
+    "shrinking": {
+      "type": "categorical",
+      "choices": [
+        true,
+        false
+      ]
+    }
+  }
+}
