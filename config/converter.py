@@ -25,6 +25,15 @@ class BaseConverter(ABC):
         pass
 
 
+class NoopConverter(BaseConverter):
+
+    def convert(self, config: MetaConfigCollection) -> object:
+        return config
+
+    def convert_single(self, config: MetaConfig) -> object:
+        return config
+
+
 class ConfigSpaceConverter(BaseConverter):
 
     def convert(self, config: MetaConfigCollection) -> Dict[str, ConfigurationSpace]:
