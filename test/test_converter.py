@@ -8,7 +8,8 @@ from ConfigSpace.hyperparameters import CategoricalHyperparameter, UniformFloatH
     UniformIntegerHyperparameter
 from hyperopt import hp
 
-from config import MetaConfigCollection, ConfigurationSpace, TpotConverter, HyperoptConverter, RandomSearchConverter
+from config import MetaConfigCollection, ConfigurationSpace, TpotConverter, HyperoptConverter, RandomSearchConverter, \
+    GridSearchConverter
 from config.converter import ConfigSpaceConverter
 
 
@@ -55,6 +56,13 @@ class TestConfigSpaceConverter(TestCase):
 
         actual = instance.convert(self.config)
         expected = self.__get_expected_random_search()
+        self.assertEqual(expected, actual)
+
+    def test_grid_search_convert(self):
+        instance = GridSearchConverter()
+
+        actual = instance.convert(self.config)
+        expected = self.__get_expected_grid_search()
         self.assertEqual(expected, actual)
 
     @staticmethod
@@ -149,5 +157,24 @@ class TestConfigSpaceConverter(TestCase):
                 'degree': range(1, 5),
                 'gamma': ['auto', SaneEqualityDist(a=0.0001, b=8)],
                 'coef0': SaneEqualityDist(a=0.0, b=10)
+            }
+        }
+
+    @staticmethod
+    def __get_expected_grid_search():
+        return {
+            'sklearn.svm.SVC': {
+                'kernel': ['linear', 'rbf', 'poly', 'sigmoid'],
+                'C': SaneEqualityArray((10,), buffer=np.array(
+                    [1.00000e-03, 1.11112e+02, 2.22223e+02, 3.33334e+02, 4.44445e+02, 5.55556e+02, 6.66667e+02,
+                     7.77778e+02, 8.88889e+02, 1.00000e+03])),
+                'shrinking': [True, False],
+                'degree': SaneEqualityArray((4,), buffer=np.array([1., 2., 3., 4.])),
+                'gamma': ['auto', 0.0001, 0.8889777777777778, 1.7778555555555555, 2.6667333333333336,
+                          3.5556111111111113, 4.4444888888888885, 5.333366666666667, 6.222244444444444,
+                          7.111122222222222, 8.0],
+                'coef0': SaneEqualityArray((10,), buffer=np.array(
+                    [0., 1.11111111, 2.22222222, 3.33333333, 4.44444444, 5.55555556, 6.66666667, 7.77777778, 8.88888889,
+                     10.]))
             }
         }
