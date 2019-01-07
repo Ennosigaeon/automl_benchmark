@@ -10,8 +10,13 @@ class EvaluationResult:
         self.params = params
 
     def __str__(self):
-        return '{{"start": {}, "end": {}, "score": {}, "params": {}}}' \
-            .format(self.start_time, self.end_time, self.score, self.params)
+        d = {
+            "start": self.start_time,
+            "end": self.end_time,
+            "score": self.score,
+            "params": self.params
+        }
+        return str(d)
 
     def __repr__(self):
         return str(self)

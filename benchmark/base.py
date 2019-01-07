@@ -1,4 +1,5 @@
 import numpy as np
+from ConfigSpace import Configuration
 
 
 def _configuration_as_array(foo, data_type=np.float):
@@ -10,7 +11,7 @@ def _configuration_as_array(foo, data_type=np.float):
     """
 
     def wrapper(self, configuration, **kwargs):
-        if isinstance(configuration, dict):
+        if isinstance(configuration, dict) or isinstance(configuration, Configuration):
             blastoise = np.array(
                 [configuration[k] for k in configuration],
                 dtype=data_type
