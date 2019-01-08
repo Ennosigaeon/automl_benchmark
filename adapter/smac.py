@@ -8,7 +8,7 @@ from smac.facade.smac_facade import SMAC
 from smac.runhistory.runhistory import RunKey, RunValue
 from smac.scenario.scenario import Scenario
 
-from adapter.base import OptimizationStatistic, EvaluationResult
+from adapter.base import OptimizationStatistic, EvaluationResult, log_async_error
 from config import ConfigSpaceConverter
 from util import multiprocessor
 
@@ -52,7 +52,8 @@ class SmacAdapter:
         for i in range(self.n_jobs):
             rs = None if self.random_state is None else self.random_state + i
             pool.apply_async(query_objective_function, args=(benchmark, self.time_limit, rs),
-                             callback=lambda res: statistics.add_result(self._transform_result(res[0], res[1], start)))
+                             callback=lambda res: statistics.add_result(self._transform_result(res[0], res[1], start)),
+                             error_callback=log_async_error)
         pool.close()
         pool.join()
 

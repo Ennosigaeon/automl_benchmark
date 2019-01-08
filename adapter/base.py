@@ -1,3 +1,5 @@
+import sys
+import traceback
 from typing import List
 
 
@@ -33,3 +35,7 @@ class OptimizationStatistic:
 
     def add_result(self, result: List[EvaluationResult]):
         self.evaluations.extend(result)
+
+
+def log_async_error(ex: Exception):
+    traceback.print_exception(type(ex), ex, None)

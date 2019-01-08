@@ -6,7 +6,7 @@ from hpolib.abstract_benchmark import AbstractBenchmark
 from sklearn.model_selection import ParameterSampler
 from sklearn.utils import check_random_state
 
-from adapter.base import OptimizationStatistic, EvaluationResult
+from adapter.base import OptimizationStatistic, EvaluationResult, log_async_error
 from config import RandomSearchConverter
 
 
@@ -50,7 +50,8 @@ class ObjectiveRandomSearch:
         for i in range(self.n_jobs):
             rs = None if self.random_state is None else self.random_state + i
             pool.apply_async(query_objective_function, args=(benchmark, limit, rs),
-                             callback=lambda res: statistics.add_result(res))
+                             callback=lambda res: statistics.add_result(res),
+                             error_callback=log_async_error)
         pool.close()
         pool.join()
 
