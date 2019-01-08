@@ -4,19 +4,32 @@ import time
 from hpolib.abstract_benchmark import AbstractBenchmark
 from sklearn.model_selection import ParameterGrid
 
-from adapter.base import OptimizationStatistic, EvaluationResult
+from adapter.base import OptimizationStatistic, EvaluationResult, log_async_error
 from config import GridSearchConverter
 
 
-def query_objective_function(conf: dict, benchmark: AbstractBenchmark, time_limit: float):
-    start = time.time()
-    if start >= time_limit:
-        raise TimeoutError()
+def query_objective_function(candidates: list, benchmark: AbstractBenchmark, timeout: float,
+                             lock: multiprocessing.Lock, index: multiprocessing.Value, ):
+    res = []
+    while time.time() < timeout:
+        lock.acquire()
+        i = index.value
+        index.value += 1
+        lock.release()
 
-    # noinspection PyTypeChecker,PyArgumentList
-    score = benchmark.objective_function(conf)
-    end = time.time()
-    return [EvaluationResult(start, end, score['function_value'], conf)]
+        try:
+            config = candidates[i]
+            start = time.time()
+
+            # noinspection PyTypeChecker,PyArgumentList
+            score = benchmark.objective_function(config)
+            end = time.time()
+
+            res.append(EvaluationResult(start, end, score['function_value'], config))
+        except IndexError:
+            # Done
+            break
+    return res
 
 
 class ObjectiveGridSearch:
@@ -24,19 +37,24 @@ class ObjectiveGridSearch:
         self.time_limit = time_limit
         self.n_jobs = n_jobs
 
+        m = multiprocessing.Manager()
+        self.lock = m.Lock()
+        self.index = m.Value('i', 0)
+
     def optimize(self, benchmark: AbstractBenchmark):
+        # noinspection PyArgumentList
+        config_space = benchmark.get_configuration_space(GridSearchConverter())
+        candidates = ParameterGrid(config_space)
+
         start = time.time()
         timeout = start + self.time_limit
         statistics = OptimizationStatistic('Grid Search', start)
 
         pool = multiprocessing.Pool(processes=self.n_jobs)
-
-        # noinspection PyArgumentList
-        config_space = benchmark.get_configuration_space(GridSearchConverter())
-        candidates = ParameterGrid(config_space)
-        for config in candidates:
-            pool.apply_async(query_objective_function, args=(config, benchmark, timeout),
-                             callback=lambda res: statistics.add_result(res))
+        for i in range(self.n_jobs):
+            pool.apply_async(query_objective_function, args=(candidates, benchmark, timeout, self.lock, self.index),
+                             callback=lambda res: statistics.add_result(res),
+                             error_callback=log_async_error)
 
         pool.close()
         pool.join()
