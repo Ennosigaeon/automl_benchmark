@@ -44,9 +44,9 @@ class TestConfigSpaceConverter(TestCase):
         self.assertEqual(expected, actual)
 
     def test_hyperopt_convert(self):
-        instance = HyperoptConverter()
+        instance = HyperoptConverter(as_scope=False)
 
-        actual = instance.convert(self.config, False)
+        actual = instance.convert(self.config)
         expected = self.__get_expected_hp()
 
         self.assertEqual(str(expected), str(actual))

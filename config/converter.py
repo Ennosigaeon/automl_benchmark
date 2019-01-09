@@ -115,7 +115,10 @@ class TpotConverter(BaseConverter):
 
 class HyperoptConverter(BaseConverter):
 
-    def convert(self, config: MetaConfigCollection, as_scope: bool = False) -> hp.choice:
+    def __init__(self,  as_scope: bool = False):
+        self.as_scope = as_scope
+
+    def convert(self, config: MetaConfigCollection) -> hp.choice:
         """
         Converting input JSON to Hyperopt ConfigurationSpace
         :param config: JSON file withe configurations
@@ -124,12 +127,12 @@ class HyperoptConverter(BaseConverter):
         """
         config_space = []
         for key, conf in config.items():
-            d = self.convert_single(conf, key, as_scope)
+            d = self.convert_single(conf, key)
             config_space.append(d)
         return hp.choice('estimator_type', config_space)
 
     # noinspection PyMethodOverriding
-    def convert_single(self, config: MetaConfig, algorithm: str, as_scope: bool = False) -> dict:
+    def convert_single(self, config: MetaConfig, algorithm: str) -> dict:
         parents = set()
         for key, param in config.items():
             if param.has_condition():
@@ -144,14 +147,12 @@ class HyperoptConverter(BaseConverter):
 
             if c.type != CATEGORICAL:
                 raise ValueError('Non categorical parameter has children')
-            l = [self.__get_algo_config(config, algorithm, as_scope, parent, choice) for choice in c.choices]
+            l = [self.__get_algo_config(config, algorithm, parent, choice) for choice in c.choices]
             return hp.choice(label, l)
 
-        return self.__get_algo_config(config, algorithm, as_scope)
+        return self.__get_algo_config(config, algorithm)
 
-    @staticmethod
-    def __get_algo_config(config: MetaConfig, algorithm: str, as_scope: bool, parent: str = None,
-                          parent_value: str = None):
+    def __get_algo_config(self, config: MetaConfig, algorithm: str, parent: str = None, parent_value: str = None):
         d = {}
         for parameter, value in config.items():
             label = 'custom_{}_{}_{}'.format(algorithm, parent_value if parent_value is not None else '', parameter)
@@ -170,7 +171,7 @@ class HyperoptConverter(BaseConverter):
                 elif value.type == CATEGORICAL:
                     d[parameter] = hp.choice(label, value.choices)
 
-        if as_scope:
+        if self.as_scope:
             return scope.generate_sklearn_estimator(algorithm, **d)
         else:
             return d
