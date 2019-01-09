@@ -8,7 +8,7 @@ from smac.facade.smac_facade import SMAC
 from smac.runhistory.runhistory import RunKey, RunValue
 from smac.scenario.scenario import Scenario
 
-from adapter.base import OptimizationStatistic, EvaluationResult, log_async_error
+from adapter.base import OptimizationStatistic, EvaluationResult, BaseAdapter
 from config import ConfigSpaceConverter
 from util import multiprocessor
 
@@ -38,12 +38,11 @@ def query_objective_function(benchmark: AbstractBenchmark, time_limit: float, ra
     return smac.runhistory.data, x_star
 
 
-class SmacAdapter:
+class SmacAdapter(BaseAdapter):
     def __init__(self, time_limit: float, n_jobs: int, random_state: int = None):
-        self.time_limit = time_limit
-        self.n_jobs = n_jobs
-        self.random_state = random_state
+        super().__init__(time_limit, n_jobs, random_state)
 
+    # noinspection PyMethodOverriding
     def optimize(self, benchmark: AbstractBenchmark):
         start = time.time()
         statistics = OptimizationStatistic('Grid Search', start)
@@ -53,7 +52,7 @@ class SmacAdapter:
             rs = None if self.random_state is None else self.random_state + i
             pool.apply_async(query_objective_function, args=(benchmark, self.time_limit, rs),
                              callback=lambda res: statistics.add_result(self._transform_result(res[0], res[1], start)),
-                             error_callback=log_async_error)
+                             error_callback=self.log_async_error)
         pool.close()
         pool.join()
 

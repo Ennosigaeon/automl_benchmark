@@ -1,6 +1,9 @@
+import abc
 import sys
 import traceback
-from typing import List
+from typing import List, Union
+
+from hpolib.abstract_benchmark import AbstractBenchmark
 
 
 class EvaluationResult:
@@ -37,5 +40,17 @@ class OptimizationStatistic:
         self.evaluations.extend(result)
 
 
-def log_async_error(ex: Exception):
-    traceback.print_exception(type(ex), ex, None)
+class BaseAdapter(abc.ABC):
+
+    @staticmethod
+    def log_async_error(ex: Exception):
+        traceback.print_exception(type(ex), ex, None)
+
+    def __init__(self, time_limit: float, n_jobs: int, random_state: Union[None, int] = None):
+        self.time_limit = time_limit
+        self.n_jobs = n_jobs
+        self.random_state = random_state
+
+    @abc.abstractmethod
+    def optimize(self, benchmark: AbstractBenchmark, **kwargs) -> OptimizationStatistic:
+        pass

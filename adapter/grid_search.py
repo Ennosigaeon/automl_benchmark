@@ -4,7 +4,7 @@ import time
 from hpolib.abstract_benchmark import AbstractBenchmark
 from sklearn.model_selection import ParameterGrid
 
-from adapter.base import OptimizationStatistic, EvaluationResult, log_async_error
+from adapter.base import OptimizationStatistic, EvaluationResult, BaseAdapter
 from config import GridSearchConverter
 
 
@@ -32,15 +32,15 @@ def query_objective_function(candidates: list, benchmark: AbstractBenchmark, tim
     return res
 
 
-class ObjectiveGridSearch:
+class ObjectiveGridSearch(BaseAdapter):
     def __init__(self, time_limit: float, n_jobs: int):
-        self.time_limit = time_limit
-        self.n_jobs = n_jobs
+        super().__init__(time_limit, n_jobs)
 
         m = multiprocessing.Manager()
         self.lock = m.Lock()
         self.index = m.Value('i', 0)
 
+    # noinspection PyMethodOverriding
     def optimize(self, benchmark: AbstractBenchmark):
         # noinspection PyArgumentList
         config_space = benchmark.get_configuration_space(GridSearchConverter())
@@ -54,7 +54,7 @@ class ObjectiveGridSearch:
         for i in range(self.n_jobs):
             pool.apply_async(query_objective_function, args=(candidates, benchmark, timeout, self.lock, self.index),
                              callback=lambda res: statistics.add_result(res),
-                             error_callback=log_async_error)
+                             error_callback=self.log_async_error)
 
         pool.close()
         pool.join()

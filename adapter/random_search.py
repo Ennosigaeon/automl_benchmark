@@ -1,12 +1,11 @@
 import multiprocessing
 import time
-from typing import Union
 
 from hpolib.abstract_benchmark import AbstractBenchmark
 from sklearn.model_selection import ParameterSampler
 from sklearn.utils import check_random_state
 
-from adapter.base import OptimizationStatistic, EvaluationResult, log_async_error
+from adapter.base import OptimizationStatistic, EvaluationResult, BaseAdapter
 from config import RandomSearchConverter
 
 
@@ -35,12 +34,11 @@ def query_objective_function(benchmark: AbstractBenchmark, time_limit: float, ra
     return res
 
 
-class ObjectiveRandomSearch:
-    def __init__(self, time_limit: float, n_jobs: int, random_state: Union[None, int] = None):
-        self.time_limit = time_limit
-        self.n_jobs = n_jobs
-        self.random_state = random_state
+class ObjectiveRandomSearch(BaseAdapter):
+    def __init__(self, time_limit: float, n_jobs: int, random_state=None):
+        super().__init__(time_limit, n_jobs, random_state)
 
+    # noinspection PyMethodOverriding
     def optimize(self, benchmark: AbstractBenchmark):
         start = time.time()
         limit = start + self.time_limit
@@ -51,7 +49,7 @@ class ObjectiveRandomSearch:
             rs = None if self.random_state is None else self.random_state + i
             pool.apply_async(query_objective_function, args=(benchmark, limit, rs),
                              callback=lambda res: statistics.add_result(res),
-                             error_callback=log_async_error)
+                             error_callback=self.log_async_error)
         pool.close()
         pool.join()
 

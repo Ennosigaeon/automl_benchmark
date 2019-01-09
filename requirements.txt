@@ -1,3 +1,4 @@
+smac
 scikit-learn
 scipy
 matplotlib
