@@ -1,6 +1,7 @@
 import abc
 import math
 from abc import ABC, abstractmethod
+from importlib import import_module
 from typing import Dict
 
 import numpy as np
@@ -10,6 +11,7 @@ from ConfigSpace.conditions import InCondition
 from ConfigSpace.hyperparameters import UniformIntegerHyperparameter, CategoricalHyperparameter, \
     UniformFloatHyperparameter
 from hyperopt import hp
+from hyperopt.pyll import scope
 
 from config import MetaConfig, MetaConfigCollection, ConfigInheritanceGraph, ConfigFeature, CATEGORICAL, UNI_INT, \
     UNI_FLOAT, PARENT, VALUE
@@ -113,56 +115,74 @@ class TpotConverter(BaseConverter):
 
 class HyperoptConverter(BaseConverter):
 
-    def convert(self, config: MetaConfigCollection) -> hp.choice:
+    def convert(self, config: MetaConfigCollection, as_scope: bool = False) -> hp.choice:
         """
         Converting input JSON to Hyperopt ConfigurationSpace
         :param config: JSON file withe configurations
+        :param as_scope:
         :return: ConfigurationSpace
         """
         config_space = []
         for key, conf in config.items():
-            d = self.convert_single(conf, key)
+            d = self.convert_single(conf, key, as_scope)
             config_space.append(d)
         return hp.choice('estimator_type', config_space)
 
     # noinspection PyMethodOverriding
-    def convert_single(self, config: MetaConfig, key: str) -> dict:
-        d = {'type': key}
-        graph = ConfigInheritanceGraph(config)
-        for child in list(graph.successors(graph.ROOT)):
-            d.update(self.__get_algo_config(key, child, graph))
-        return d
+    def convert_single(self, config: MetaConfig, algorithm: str, as_scope: bool = False) -> dict:
+        parents = set()
+        for key, param in config.items():
+            if param.has_condition():
+                parents.add(param.condition['parent'])
 
-    def __get_algo_config(self, parent: str, parameter: str, graph: ConfigInheritanceGraph) -> dict:
-        """
-        Builds a nested ConfigurationDict for a estimator and its child parameters by recursion
-        :param parent: String with name of parent parameter
-        :param parameter: String withe name of actual parameter
-        :param graph: Directed graph representing inheritance of parameters
-        :return: ConfigurationDict for input estimator
-        """
-        config: ConfigFeature = graph.get_config()[parameter]
-        label = parent + "_" + parameter
-        if config.type == UNI_INT:
-            return {parameter: hp.quniform(label, config.lower, config.upper, 1)}
-        elif config.type == UNI_FLOAT:
-            return {parameter: hp.uniform(label, config.lower, config.upper)}
-        elif config.type == CATEGORICAL:
-            type_label = "option"
-            choices_list = []
-            for choice in config.choices:
-                children = graph.edge_dfs(choice)
-                result = {type_label: choice}
+        if len(parents) > 1:
+            raise ValueError('More than one parent is currently no supported')
 
-                if (len(children) == 1):
-                    from_node = children[0][0]
-                    to_node = children[0][1]
-                    result = {type_label: self.__get_algo_config(from_node, to_node, graph)[to_node]}
-                else:
-                    for child in graph.successors(choice):
-                        result.update(self.__get_algo_config(choice, child, graph))
-                choices_list.append(result)
-            return {parameter: hp.choice(label, choices_list)}
+        for parent in parents:
+            label = 'custom_{}'.format(algorithm)
+            c = config.dict[parent]
+
+            if c.type != CATEGORICAL:
+                raise ValueError('Non categorical parameter has children')
+            l = [self.__get_algo_config(config, algorithm, as_scope, parent, choice) for choice in c.choices]
+            return hp.choice(label, l)
+
+        return self.__get_algo_config(config, algorithm, as_scope)
+
+    @staticmethod
+    def __get_algo_config(config: MetaConfig, algorithm: str, as_scope: bool, parent: str = None,
+                          parent_value: str = None):
+        d = {}
+        for parameter, value in config.items():
+            label = 'custom_{}_{}_{}'.format(algorithm, parent_value if parent_value is not None else '', parameter)
+
+            if parameter == parent:
+                d[parameter] = parent_value
+            else:
+                if value.has_condition() and value.condition['parent'] == parent and parent_value not in \
+                        value.condition['value']:
+                    continue
+
+                if value.type == UNI_INT:
+                    d[parameter] = hp.quniform(label, value.lower, value.upper, 1)
+                elif value.type == UNI_FLOAT:
+                    d[parameter] = hp.uniform(label, value.lower, value.upper)
+                elif value.type == CATEGORICAL:
+                    d[parameter] = hp.choice(label, value.choices)
+
+        if as_scope:
+            return scope.generate_sklearn_estimator(algorithm, **d)
+        else:
+            return d
+
+    @staticmethod
+    @scope.define
+    def generate_sklearn_estimator(estimator_name, *args, **kwargs):
+        module_name = estimator_name.rpartition(".")[0]
+        class_name = estimator_name.split(".")[-1]
+        module = import_module(module_name)
+        class_ = getattr(module, class_name)
+        return class_(*args, **kwargs)
 
 
 class NaiveSearchConverter(BaseConverter, abc.ABC):
@@ -205,13 +225,7 @@ class RandomSearchConverter(NaiveSearchConverter):
         elif value.type == CATEGORICAL:
             choices_list = []
             for choice in value.choices:
-                children = graph.edge_dfs(choice)
-
-                if len(children) == 1:
-                    c = graph.get_config()[children[0][1]]
-                    choices_list.append(self._get_algo_config(children[0][1], c, graph))
-                else:
-                    choices_list.append(choice)
+                choices_list.append(choice)
             return choices_list
         else:
             raise ValueError('Unknown type {}'.format(value.type))

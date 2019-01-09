@@ -46,7 +46,7 @@ class TestConfigSpaceConverter(TestCase):
     def test_hyperopt_convert(self):
         instance = HyperoptConverter()
 
-        actual = instance.convert(self.config)
+        actual = instance.convert(self.config, False)
         expected = self.__get_expected_hp()
 
         self.assertEqual(str(expected), str(actual))
@@ -79,10 +79,8 @@ class TestConfigSpaceConverter(TestCase):
         use_degree = InCondition(child=degree, parent=kernel, values=['poly'])
         use_coef0 = InCondition(child=coef0, parent=kernel, values=['poly', 'sigmoid'])
         cs.add_conditions([use_degree, use_coef0])
-        gamma = CategoricalHyperparameter('gamma', ['auto', 'value'], default_value='auto')  # only rbf, poly, sigmoid
-        gamma_value = UniformFloatHyperparameter('gamma_value', 0.0001, 8, default_value=1)
-        cs.add_hyperparameters([gamma, gamma_value])
-        cs.add_condition(InCondition(child=gamma_value, parent=gamma, values=['value']))
+        gamma = UniformFloatHyperparameter('gamma', 0.0001, 8, default_value=1)
+        cs.add_hyperparameters([gamma])
         cs.add_condition(InCondition(child=gamma, parent=kernel, values=['rbf', 'poly', 'sigmoid']))
 
         return {'sklearn.svm.SVC': cs}
@@ -99,8 +97,7 @@ class TestConfigSpaceConverter(TestCase):
                      7.000003e+02, 8.000002e+02, 9.000001e+02])),
                 'shrinking': [True, False],
                 'degree': range(1, 5),
-                'gamma': ['auto', 'value'],
-                'gamma_value': SaneEqualityArray((10,), buffer=np.array(
+                'gamma': SaneEqualityArray((10,), buffer=np.array(
                     [1.00000e-04, 8.00090e-01, 1.60008e+00, 2.40007e+00, 3.20006e+00, 4.00005e+00,
                      4.80004e+00, 5.60003e+00, 6.40002e+00, 7.20001e+00])),
 
@@ -111,40 +108,36 @@ class TestConfigSpaceConverter(TestCase):
     @staticmethod
     def __get_expected_hp():
         expected_hp_space = hp.choice('estimator_type', [
-            {
-                'type': 'sklearn.svm.SVC',
-                'C': hp.uniform('sklearn.svm.SVC_C', 0.001, 1000.0),
-                'kernel': hp.choice('sklearn.svm.SVC_kernel', [
-                    {'option': 'linear'},
-                    {
-                        'option': 'rbf',
-                        'gamma': hp.choice('rbf_gamma', [
-                            {'option': 'auto'},
-                            {'option': hp.uniform('value_gamma_value', 0.0001, 8)}
-                        ])
-                    },
-                    {
-                        'option': 'poly',
-                        'gamma': hp.choice('poly_gamma', [
-                            {'option': 'auto'},
-                            {'option': hp.uniform('value_gamma_value', 0.0001, 8)}
-                        ]),
-                        'degree': hp.quniform('poly_degree', 1, 5, 1),
-                        'coef0': hp.uniform('poly_coef0', 0.0, 10.0)
-                    },
-                    {
-                        'option': 'sigmoid',
-                        'gamma': hp.choice('sigmoid_gamma', [
-                            {'option': 'auto'},
-                            {'option': hp.uniform('value_gamma_value', 0.0001, 8)}
-                        ]),
-                        'coef0': hp.uniform('sigmoid_coef0', 0.0, 10.0)
-                    }
-                ]),
-                'shrinking': hp.choice('sklearn.svm.SVC_shrinking', [
-                    {'option': True}, {'option': False}])
-            }
+            hp.choice('custom_sklearn.svm.SVC', [
+                {
+                    "kernel": "linear",
+                    'C': hp.uniform('custom_sklearn.svm.SVC_linear_C', 0.001, 1000.0),
+                    'shrinking': hp.choice('custom_sklearn.svm.SVC_linear_shrinking', [True, False])
+                },
+                {
+                    "kernel": "rbf",
+                    'C': hp.uniform('custom_sklearn.svm.SVC_rbf_C', 0.001, 1000.0),
+                    'gamma': hp.uniform('custom_sklearn.svm.SVC_rbf_gamma', 0.0001, 8),
+                    'shrinking': hp.choice('custom_sklearn.svm.SVC_rbf_shrinking', [True, False])
+                },
+                {
+                    "kernel": 'poly',
+                    'C': hp.uniform('custom_sklearn.svm.SVC_poly_C', 0.001, 1000.0),
+                    'gamma': hp.uniform('custom_sklearn.svm.SVC_poly_gamma', 0.0001, 8),
+                    'degree': hp.quniform('custom_sklearn.svm.SVC_poly_degree', 1, 5, 1),
+                    'coef0': hp.uniform('custom_sklearn.svm.SVC_poly_coef0', 0.0, 10.0),
+                    'shrinking': hp.choice('custom_sklearn.svm.SVC_poly_shrinking', [True, False])
+                },
+                {
+                    "kernel": 'sigmoid',
+                    'C': hp.uniform('custom_sklearn.svm.SVC_sigmoid_C', 0.001, 1000.0),
+                    'gamma': hp.uniform('custom_sklearn.svm.SVC_sigmoid_gamma', 0.0001, 8),
+                    'coef0': hp.uniform('custom_sklearn.svm.SVC_sigmoid_coef0', 0.0, 10.0),
+                    'shrinking': hp.choice('custom_sklearn.svm.SVC_sigmoid_shrinking', [True, False])
+                }
+            ])
         ])
+
         return expected_hp_space
 
     @staticmethod
@@ -155,7 +148,7 @@ class TestConfigSpaceConverter(TestCase):
                 'C': SaneEqualityDist(a=0.001, b=1000),
                 'shrinking': [True, False],
                 'degree': range(1, 5),
-                'gamma': ['auto', SaneEqualityDist(a=0.0001, b=8)],
+                'gamma': SaneEqualityDist(a=0.0001, b=8),
                 'coef0': SaneEqualityDist(a=0.0, b=10)
             }
         }
@@ -170,9 +163,9 @@ class TestConfigSpaceConverter(TestCase):
                      7.77778e+02, 8.88889e+02, 1.00000e+03])),
                 'shrinking': [True, False],
                 'degree': SaneEqualityArray((4,), buffer=np.array([1., 2., 3., 4.])),
-                'gamma': ['auto', 0.0001, 0.8889777777777778, 1.7778555555555555, 2.6667333333333336,
-                          3.5556111111111113, 4.4444888888888885, 5.333366666666667, 6.222244444444444,
-                          7.111122222222222, 8.0],
+                'gamma': SaneEqualityArray((10,), buffer=np.array(
+                    [0.0001, 0.8889777777777778, 1.7778555555555555, 2.6667333333333336, 3.5556111111111113,
+                     4.4444888888888885, 5.333366666666667, 6.222244444444444, 7.111122222222222, 8.0])),
                 'coef0': SaneEqualityArray((10,), buffer=np.array(
                     [0., 1.11111111, 2.22222222, 3.33333333, 4.44444444, 5.55555556, 6.66666667, 7.77777778, 8.88888889,
                      10.]))
