@@ -42,7 +42,7 @@ class ObjectiveRandomSearch(BaseAdapter):
     def optimize(self, benchmark: AbstractBenchmark):
         start = time.time()
         limit = start + self.time_limit
-        statistics = OptimizationStatistic('Random Search', start)
+        statistics = OptimizationStatistic('Random Search', start, self.n_jobs)
 
         pool = multiprocessing.Pool(processes=self.n_jobs)
         for i in range(self.n_jobs):
@@ -52,6 +52,7 @@ class ObjectiveRandomSearch(BaseAdapter):
                              error_callback=self.log_async_error)
         pool.close()
         pool.join()
+        statistics.stop_optimisation()
 
         return statistics
 

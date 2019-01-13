@@ -1,9 +1,12 @@
+import logging
 from argparse import Namespace
 
 import benchmark
 from adapter.grid_search import ObjectiveGridSearch
 from adapter.random_search import ObjectiveRandomSearch
 from adapter.smac import SmacAdapter
+
+logging.basicConfig(level=40)  # 10: debug; 20: info
 
 config_dict = {
     'n_jobs': 5,
@@ -22,16 +25,19 @@ benchmark = benchmark.Branin()
 if config.random_search:
     rs = ObjectiveRandomSearch(config.timeout, config.n_jobs, random_state=config.seed)
     stats = rs.optimize(benchmark)
+    print(stats.metadata)
     print(len(stats.evaluations))
 
 # Grid Search
 if config.grid_search:
     rs = ObjectiveGridSearch(config.timeout, config.n_jobs)
     stats = rs.optimize(benchmark)
+    print(stats.metadata)
     print(len(stats.evaluations))
 
 # SMAC
 if config.smac:
     smac = SmacAdapter(config.timeout, config.n_jobs, config.seed)
     stats = smac.optimize(benchmark)
+    print(stats.metadata)
     print(len(stats.evaluations))

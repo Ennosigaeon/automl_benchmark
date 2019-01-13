@@ -45,7 +45,7 @@ class SmacAdapter(BaseAdapter):
     # noinspection PyMethodOverriding
     def optimize(self, benchmark: AbstractBenchmark):
         start = time.time()
-        statistics = OptimizationStatistic('Grid Search', start)
+        statistics = OptimizationStatistic('SMAC', start, self.n_jobs)
 
         pool = multiprocessor.NoDaemonPool(processes=self.n_jobs)
         for i in range(self.n_jobs):
@@ -55,6 +55,7 @@ class SmacAdapter(BaseAdapter):
                              error_callback=self.log_async_error)
         pool.close()
         pool.join()
+        statistics.stop_optimisation()
 
         return statistics
 

@@ -48,7 +48,7 @@ class ObjectiveGridSearch(BaseAdapter):
 
         start = time.time()
         timeout = start + self.time_limit
-        statistics = OptimizationStatistic('Grid Search', start)
+        statistics = OptimizationStatistic('Grid Search', start, self.n_jobs)
 
         pool = multiprocessing.Pool(processes=self.n_jobs)
         for i in range(self.n_jobs):
@@ -58,5 +58,6 @@ class ObjectiveGridSearch(BaseAdapter):
 
         pool.close()
         pool.join()
+        statistics.stop_optimisation()
 
         return statistics

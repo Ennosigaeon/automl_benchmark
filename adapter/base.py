@@ -1,6 +1,7 @@
 import abc
-import sys
+import time
 import traceback
+import numpy as np
 from typing import List, Union
 
 from hpolib.abstract_benchmark import AbstractBenchmark
@@ -16,10 +17,10 @@ class EvaluationResult:
 
     def __str__(self):
         d = {
-            "start": self.start_time,
-            "end": self.end_time,
-            "score": self.score,
-            "params": self.params
+            'start': self.start_time,
+            'end': self.end_time,
+            'score': self.score,
+            'params': self.params
         }
         return str(d)
 
@@ -29,15 +30,38 @@ class EvaluationResult:
 
 class OptimizationStatistic:
 
-    def __init__(self, algorithm: str, start: float):
+    def __init__(self, algorithm: str, start: float, n_jobs: int):
         self.metadata = {
-            "algorithm": algorithm,
-            "begin": start
+            'algorithm': algorithm,
+            'start': start,
+            'end': None,
+            'n_jobs': n_jobs,
+            'runtime': {}
         }
-        self.evaluations = []
+        self.evaluations: List[EvaluationResult] = []
 
     def add_result(self, result: List[EvaluationResult]):
         self.evaluations.extend(result)
+
+    def stop_optimisation(self):
+        self.metadata['end'] = time.time()
+
+        total = self.metadata['end'] - self.metadata['start']
+        objective_function = np.array([ev.end_time - ev.start_time for ev in self.evaluations])
+
+        overhead = []
+        previous = self.metadata['start']
+        for ev in self.evaluations:
+            overhead.append(ev.start_time - previous)
+            previous = ev.end_time
+        overhead.append(self.metadata['end'] - previous)
+        overhead = np.array(overhead)
+
+        self.metadata['runtime'] = {
+            'total': total,
+            'objective_function': [objective_function.mean(), objective_function.var()],
+            'overhead': [overhead.mean(), overhead.var()]
+        }
 
 
 class BaseAdapter(abc.ABC):

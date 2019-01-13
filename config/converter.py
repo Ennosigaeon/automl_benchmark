@@ -115,7 +115,7 @@ class TpotConverter(BaseConverter):
 
 class HyperoptConverter(BaseConverter):
 
-    def __init__(self,  as_scope: bool = False):
+    def __init__(self, as_scope: bool = False):
         self.as_scope = as_scope
 
     def convert(self, config: MetaConfigCollection) -> hp.choice:
@@ -132,7 +132,7 @@ class HyperoptConverter(BaseConverter):
         return hp.choice('estimator_type', config_space)
 
     # noinspection PyMethodOverriding
-    def convert_single(self, config: MetaConfig, algorithm: str) -> dict:
+    def convert_single(self, config: MetaConfig, algorithm: str = '') -> dict:
         parents = set()
         for key, param in config.items():
             if param.has_condition():
@@ -155,7 +155,10 @@ class HyperoptConverter(BaseConverter):
     def __get_algo_config(self, config: MetaConfig, algorithm: str, parent: str = None, parent_value: str = None):
         d = {}
         for parameter, value in config.items():
-            label = 'custom_{}_{}_{}'.format(algorithm, parent_value if parent_value is not None else '', parameter)
+            if self.as_scope:
+                label = 'custom_{}_{}_{}'.format(algorithm, parent_value if parent_value is not None else '', parameter)
+            else:
+                label = parameter
 
             if parameter == parent:
                 d[parameter] = parent_value
@@ -165,7 +168,9 @@ class HyperoptConverter(BaseConverter):
                     continue
 
                 if value.type == UNI_INT:
-                    d[parameter] = hp.quniform(label, value.lower, value.upper, 1)
+                    # TODO check if difference between hyperopt and hyperopt-sklearn
+                    # d[parameter] = hp.quniform(label, value.lower, value.upper, 1)
+                    d[parameter] = scope.int(hp.quniform(label, value.lower, value.upper, 1))
                 elif value.type == UNI_FLOAT:
                     d[parameter] = hp.uniform(label, value.lower, value.upper)
                 elif value.type == CATEGORICAL:
