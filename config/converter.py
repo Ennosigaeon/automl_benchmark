@@ -262,13 +262,7 @@ class GridSearchConverter(NaiveSearchConverter):
         elif value.type == CATEGORICAL:
             choices_list = []
             for choice in value.choices:
-                children = graph.edge_dfs(choice)
-
-                if len(children) == 1:
-                    c = graph.get_config()[children[0][1]]
-                    choices_list.extend(self._get_algo_config(children[0][1], c, graph))
-                else:
-                    choices_list.append(choice)
+                choices_list.append(choice)
             return choices_list
         else:
             raise ValueError('Unknown type {}'.format(value.type))
