@@ -7,6 +7,7 @@ from ConfigSpace.conditions import InCondition
 from ConfigSpace.hyperparameters import CategoricalHyperparameter, UniformFloatHyperparameter, \
     UniformIntegerHyperparameter
 from hyperopt import hp
+from hyperopt.pyll import scope
 
 from config import MetaConfigCollection, ConfigurationSpace, TpotConverter, HyperoptConverter, RandomSearchConverter, \
     GridSearchConverter
@@ -124,7 +125,7 @@ class TestConfigSpaceConverter(TestCase):
                     "kernel": 'poly',
                     'C': hp.uniform('custom_sklearn.svm.SVC_poly_C', 0.001, 1000.0),
                     'gamma': hp.uniform('custom_sklearn.svm.SVC_poly_gamma', 0.0001, 8),
-                    'degree': hp.quniform('custom_sklearn.svm.SVC_poly_degree', 1, 5, 1),
+                    'degree': scope.int(hp.quniform('custom_sklearn.svm.SVC_poly_degree', 1, 5, 1)),
                     'coef0': hp.uniform('custom_sklearn.svm.SVC_poly_coef0', 0.0, 10.0),
                     'shrinking': hp.choice('custom_sklearn.svm.SVC_poly_shrinking', [True, False])
                 },

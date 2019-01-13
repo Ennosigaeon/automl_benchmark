@@ -3,6 +3,7 @@ from argparse import Namespace
 
 import benchmark
 from adapter.grid_search import ObjectiveGridSearch
+from adapter.hyperopt import HyperoptAdapter
 from adapter.random_search import ObjectiveRandomSearch
 from adapter.smac import SmacAdapter
 
@@ -15,7 +16,8 @@ config_dict = {
 
     'random_search': True,
     'grid_search': True,
-    'smac': True
+    'smac': True,
+    'hyperopt': True
 }
 config = Namespace(**config_dict)
 
@@ -39,5 +41,12 @@ if config.grid_search:
 if config.smac:
     smac = SmacAdapter(config.timeout, config.n_jobs, config.seed)
     stats = smac.optimize(benchmark)
+    print(stats.metadata)
+    print(len(stats.evaluations))
+
+# hyperopt
+if config.hyperopt:
+    hyperopt = HyperoptAdapter(config.timeout, config.n_jobs)
+    stats = hyperopt.optimize(benchmark)
     print(stats.metadata)
     print(len(stats.evaluations))
