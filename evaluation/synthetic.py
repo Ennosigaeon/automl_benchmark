@@ -2,6 +2,7 @@ import logging
 from argparse import Namespace
 
 import benchmark
+from adapter.bohb import BohbAdapter
 from adapter.grid_search import ObjectiveGridSearch
 from adapter.hyperopt import HyperoptAdapter
 from adapter.random_search import ObjectiveRandomSearch
@@ -17,7 +18,8 @@ config_dict = {
     'random_search': True,
     'grid_search': True,
     'smac': True,
-    'hyperopt': True
+    'hyperopt': True,
+    'bohb': True
 }
 config = Namespace(**config_dict)
 
@@ -48,5 +50,12 @@ if config.smac:
 if config.hyperopt:
     hyperopt = HyperoptAdapter(config.timeout, config.n_jobs)
     stats = hyperopt.optimize(benchmark)
+    print(stats.metadata)
+    print(len(stats.evaluations))
+
+# hyperopt
+if config.bohb:
+    bohb = BohbAdapter(config.timeout, config.n_jobs)
+    stats = bohb.optimize(benchmark)
     print(stats.metadata)
     print(len(stats.evaluations))
