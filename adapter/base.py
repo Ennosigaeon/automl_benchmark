@@ -1,9 +1,9 @@
 import abc
 import time
 import traceback
-import numpy as np
 from typing import List, Union
 
+import numpy as np
 from hpolib.abstract_benchmark import AbstractBenchmark
 
 
@@ -26,6 +26,10 @@ class EvaluationResult:
 
     def __repr__(self):
         return str(self)
+
+    @staticmethod
+    def from_dict(d: dict, conf: object) -> 'EvaluationResult':
+        return EvaluationResult(d['start'], d['end'], d['function_value'], conf)
 
 
 class OptimizationStatistic:

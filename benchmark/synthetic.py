@@ -2,7 +2,7 @@ import numpy as np
 from hpolib.abstract_benchmark import AbstractBenchmark
 from hpolib.benchmarks import synthetic_functions
 
-from benchmark.base import _dict_as_array
+from benchmark.base import _dict_as_array, meta_information
 from config import BaseConverter, MetaConfig, NoopConverter
 
 
@@ -10,6 +10,7 @@ class Bohachevsky(synthetic_functions.Bohachevsky):
 
     @_dict_as_array
     @AbstractBenchmark._configuration_as_array
+    @meta_information
     def objective_function(self, x, **kwargs):
         y = 0.7 + x[0] ** 2 + 2.0 * x[1] ** 2
         y -= 0.3 * np.cos(3.0 * np.pi * x[0])
@@ -38,6 +39,7 @@ class Branin(synthetic_functions.Branin):
 
     @_dict_as_array
     @AbstractBenchmark._configuration_as_array
+    @meta_information
     def objective_function(self, x, **kwargs):
         y = (x[1] - (5.1 / (4 * np.pi ** 2)) * x[0] ** 2 + 5 * x[0] / np.pi - 6) ** 2
         y += 10 * (1 - 1 / (8 * np.pi)) * np.cos(x[0]) + 10
@@ -68,6 +70,7 @@ class Camelback(synthetic_functions.Camelback):
 
     @_dict_as_array
     @AbstractBenchmark._configuration_as_array
+    @meta_information
     def objective_function(self, x, **kwargs):
         y = (4 - 2.1 * (x[0] ** 2) + ((x[0] ** 4) / 3)) * (x[0] ** 2) + x[0] * x[1] + (-4 + 4 * (x[1] ** 2)) * \
             (x[1] ** 2)
@@ -94,6 +97,7 @@ class Forrester(synthetic_functions.Forrester):
 
     @_dict_as_array
     @AbstractBenchmark._configuration_as_array
+    @meta_information
     def objective_function(self, x, fidelity=1, **kwargs):
         x = x[0]
         y1 = np.power(6 * x - 2, 2) * np.sin(12 * x - 4)
@@ -118,6 +122,7 @@ class GoldsteinPrice(synthetic_functions.GoldsteinPrice):
 
     @_dict_as_array
     @AbstractBenchmark._configuration_as_array
+    @meta_information
     def objective_function(self, x, **kwargs):
         y = (1 + (x[0] + x[1] + 1) ** 2 * (
                 19 - 14 * x[0] + 3 * x[0] ** 2 - 14 * x[1] + 6 * x[0] * x[1] + 3 * x[1] ** 2)) \
@@ -147,6 +152,7 @@ class Hartmann3(synthetic_functions.Hartmann3):
 
     @_dict_as_array
     @AbstractBenchmark._configuration_as_array
+    @meta_information
     def objective_function(self, x, **kwargs):
         external_sum = 0
         for i in range(4):
@@ -173,6 +179,7 @@ class Hartmann6(synthetic_functions.Hartmann6):
 
     @_dict_as_array
     @AbstractBenchmark._configuration_as_array
+    @meta_information
     def objective_function(self, x, **kwargs):
         """6d Hartmann test function
             input bounds:  0 <= xi <= 1, i = 1..6
@@ -205,6 +212,7 @@ class Levy(synthetic_functions.Levy):
 
     @_dict_as_array
     @AbstractBenchmark._configuration_as_array
+    @meta_information
     def objective_function(self, x, **kwargs):
         z = 1 + ((x[0] - 1.) / 4.)
         s = np.power((np.sin(np.pi * z)), 2)
@@ -230,6 +238,7 @@ class Rosenbrock20D(synthetic_functions.rosenbrock.Rosenbrock20D):
 
     @_dict_as_array
     @AbstractBenchmark._configuration_as_array
+    @meta_information
     def objective_function(self, x, **kwargs):
         y = 0
         d = 20
@@ -255,6 +264,7 @@ class SinOne(synthetic_functions.SinOne):
 
     @_dict_as_array
     @AbstractBenchmark._configuration_as_array
+    @meta_information
     def objective_function(self, x, **kwargs):
         y = 0.5 * np.sin(13 * x[0]) * np.sin(27 * x[0]) + 0.5
 
@@ -276,6 +286,7 @@ class SinTwo(synthetic_functions.SinTwo):
 
     @_dict_as_array
     @AbstractBenchmark._configuration_as_array
+    @meta_information
     def objective_function(self, x, **kwargs):
         y = (0.5 * np.sin(13 * x[0]) * np.sin(27 * x[0]) + 0.5) * (0.5 * np.sin(13 * x[1]) * np.sin(27 * x[1]) + 0.5)
 

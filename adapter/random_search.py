@@ -21,17 +21,14 @@ class CustomParameterSampler(ParameterSampler):
 
 
 def query_objective_function(benchmark: AbstractBenchmark, time_limit: float, random_state: int):
-    res = []
+    ls = []
     while time.time() < time_limit:
-        start = time.time()
         # noinspection PyTypeChecker,PyArgumentList
         conf = list(CustomParameterSampler(benchmark.get_configuration_space(RandomSearchConverter()), 1,
                                            random_state=random_state))[0]
-        score = benchmark.objective_function(conf)
-        end = time.time()
-
-        res.append(EvaluationResult(start, end, score['function_value'], conf))
-    return res
+        res = benchmark.objective_function(conf)
+        ls.append(EvaluationResult.from_dict(res, conf))
+    return ls
 
 
 class ObjectiveRandomSearch(BaseAdapter):

@@ -13,7 +13,8 @@ class HyperoptAdapter(BaseAdapter):
         self.timeout = None
         self.benchmark = None
 
-    def optimize(self, benchmark: AbstractBenchmark, **kwargs) -> OptimizationStatistic:
+    # noinspection PyMethodOverriding
+    def optimize(self, benchmark: AbstractBenchmark) -> OptimizationStatistic:
         start = time.time()
         self.timeout = start + self.time_limit
         self.benchmark = benchmark
@@ -52,12 +53,7 @@ class HyperoptAdapter(BaseAdapter):
                 'status_fail': 'Timeout reached'
             }
 
-        start = time.time()
         res = self.benchmark.objective_function(conf)
-        end = time.time()
-        return {
-            'status': STATUS_OK,
-            'loss': res['function_value'],
-            'start': start,
-            'end': end
-        }
+        res['status'] = STATUS_OK
+        res['loss'] = res['function_value']
+        return res

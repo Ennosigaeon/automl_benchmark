@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 
 
@@ -20,3 +22,16 @@ def _dict_as_array(foo, data_type=np.float):
         return (foo(self, blastoise, **kwargs))
 
     return (wrapper)
+
+
+def meta_information(foo):
+    def wrapper(self, confguration, **kwargs):
+        start = time.time()
+        res = foo(self, confguration, **kwargs)
+
+        res['start'] = start
+        res['end'] = time.time()
+        # res['config'] = confguration
+        return res
+
+    return wrapper

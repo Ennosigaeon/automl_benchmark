@@ -10,7 +10,7 @@ from config import GridSearchConverter
 
 def query_objective_function(candidates: list, benchmark: AbstractBenchmark, timeout: float,
                              lock: multiprocessing.Lock, index: multiprocessing.Value, ):
-    res = []
+    ls = []
     while time.time() < timeout:
         lock.acquire()
         i = index.value
@@ -19,17 +19,13 @@ def query_objective_function(candidates: list, benchmark: AbstractBenchmark, tim
 
         try:
             config = candidates[i]
-            start = time.time()
-
             # noinspection PyTypeChecker,PyArgumentList
-            score = benchmark.objective_function(config)
-            end = time.time()
-
-            res.append(EvaluationResult(start, end, score['function_value'], config))
+            res = benchmark.objective_function(config)
+            ls.append(EvaluationResult.from_dict(res, config))
         except IndexError:
             # Done
             break
-    return res
+    return ls
 
 
 class ObjectiveGridSearch(BaseAdapter):
