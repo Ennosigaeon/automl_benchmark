@@ -40,6 +40,7 @@ class OptimizationStatistic:
             'start': start,
             'end': None,
             'n_jobs': n_jobs,
+            'count': 0,
             'runtime': {}
         }
         self.evaluations: List[EvaluationResult] = []
@@ -61,6 +62,7 @@ class OptimizationStatistic:
         overhead.append(self.metadata['end'] - previous)
         overhead = np.array(overhead)
 
+        self.metadata['count'] = len(self.evaluations)
         self.metadata['runtime'] = {
             'total': total,
             'objective_function': [objective_function.mean(), objective_function.var()],

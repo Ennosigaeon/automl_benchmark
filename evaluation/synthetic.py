@@ -30,32 +30,27 @@ if config.random_search:
     rs = ObjectiveRandomSearch(config.timeout, config.n_jobs, random_state=config.seed)
     stats = rs.optimize(benchmark)
     print(stats.metadata)
-    print(len(stats.evaluations))
 
 # Grid Search
 if config.grid_search:
     rs = ObjectiveGridSearch(config.timeout, config.n_jobs)
     stats = rs.optimize(benchmark)
     print(stats.metadata)
-    print(len(stats.evaluations))
 
 # SMAC
 if config.smac:
     smac = SmacAdapter(config.timeout, config.n_jobs, config.seed)
     stats = smac.optimize(benchmark)
     print(stats.metadata)
-    print(len(stats.evaluations))
 
 # hyperopt
 if config.hyperopt:
     hyperopt = HyperoptAdapter(config.timeout, config.n_jobs)
     stats = hyperopt.optimize(benchmark)
     print(stats.metadata)
-    print(len(stats.evaluations))
 
-# hyperopt
+# bohb
 if config.bohb:
     bohb = BohbAdapter(config.timeout, config.n_jobs)
     stats = bohb.optimize(benchmark)
     print(stats.metadata)
-    print(len(stats.evaluations))
