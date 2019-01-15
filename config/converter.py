@@ -266,3 +266,23 @@ class GridSearchConverter(NaiveSearchConverter):
             return choices_list
         else:
             raise ValueError('Unknown type {}'.format(value.type))
+
+
+class RoBoConverter(BaseConverter):
+    def convert(self, config: MetaConfigCollection) -> object:
+        raise NotImplementedError('RoBo is not suited for CASH solving')
+
+    def convert_single(self, config: MetaConfig) -> object:
+        lower = []
+        upper = []
+        names = []
+
+        for name, value in config.items():
+            if value.type == UNI_FLOAT:
+                lower.append(value.lower)
+                upper.append(value.upper)
+                names.append(name)
+            else:
+                raise ValueError('RoBo can only handle floating numbers')
+
+        return np.array(lower), np.array(upper), names
