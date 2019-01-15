@@ -29,7 +29,7 @@ benchmark = benchmark.Branin()
 
 # Random Search
 if config.random_search:
-    rs = ObjectiveRandomSearch(config.timeout, config.n_jobs, random_state=config.seed)
+    rs = ObjectiveRandomSearch(config.timeout, config.n_jobs)
     stats = rs.optimize(benchmark)
     print(stats.metadata)
 

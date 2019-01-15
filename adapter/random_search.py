@@ -20,12 +20,11 @@ class CustomParameterSampler(ParameterSampler):
             yield s
 
 
-def query_objective_function(benchmark: AbstractBenchmark, time_limit: float, random_state: int):
+def query_objective_function(benchmark: AbstractBenchmark, time_limit: float):
     ls = []
     while time.time() < time_limit:
         # noinspection PyTypeChecker,PyArgumentList
-        conf = list(CustomParameterSampler(benchmark.get_configuration_space(RandomSearchConverter()), 1,
-                                           random_state=random_state))[0]
+        conf = list(CustomParameterSampler(benchmark.get_configuration_space(RandomSearchConverter()), 1))[0]
         res = benchmark.objective_function(conf)
         ls.append(EvaluationResult.from_dict(res, conf))
     return ls
@@ -43,8 +42,7 @@ class ObjectiveRandomSearch(BaseAdapter):
 
         pool = multiprocessing.Pool(processes=self.n_jobs)
         for i in range(self.n_jobs):
-            rs = None if self.random_state is None else self.random_state + i
-            pool.apply_async(query_objective_function, args=(benchmark, limit, rs),
+            pool.apply_async(query_objective_function, args=(benchmark, limit),
                              callback=lambda res: statistics.add_result(res),
                              error_callback=self.log_async_error)
         pool.close()
