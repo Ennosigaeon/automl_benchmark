@@ -28,8 +28,8 @@ def query_objective_function(benchmark: AbstractBenchmark, time_limit: float, ra
         # 'cutoff_time': 10,
         "cs": cs,
 
-        "input_psmac_dirs": "./smac/{:s}/in/".format(name),
-        "output_dir": "./smac/{:s}/out/{:d}".format(name, random_state)
+        "input_psmac_dirs": "/tmp/smac/{:s}/in/".format(name),
+        "output_dir": "/tmp/smac/{:s}/out/{:d}".format(name, random_state)
     })
 
     smac = SMAC(scenario=scenario, tae_runner=benchmark, rng=np.random.RandomState(random_state))

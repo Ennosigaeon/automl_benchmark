@@ -53,7 +53,7 @@ class BohbAdapter(BaseAdapter):
         configs = res.get_id2config_mapping()
         ls = []
         for run in res.get_all_runs():
-            ls.append(EvaluationResult.from_dict(run.info, configs[run.config_id]))
+            ls.append(EvaluationResult.from_dict(run.info, configs[run.config_id]['config']))
         statistics.add_result(ls)
         statistics.stop_optimisation()
 

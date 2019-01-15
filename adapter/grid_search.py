@@ -8,7 +8,7 @@ from adapter.base import OptimizationStatistic, EvaluationResult, BaseAdapter
 from config import GridSearchConverter
 
 
-def query_objective_function(candidates: list, benchmark: AbstractBenchmark, timeout: float,
+def query_objective_function(candidates: ParameterGrid, benchmark: AbstractBenchmark, timeout: float,
                              lock: multiprocessing.Lock, index: multiprocessing.Value, ):
     ls = []
     while time.time() < timeout:
