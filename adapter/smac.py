@@ -61,8 +61,9 @@ class SmacAdapter(BaseAdapter):
 
     @staticmethod
     def _transform_result(history: Dict[RunKey, RunValue], best: Configuration, start: float) -> List:
+        # TODO EvaluationResult timestamps are not correct
         res = []
-        offset = 0
+        offset = 0.025
         for run_value in history.values():
             res.append(EvaluationResult(start + offset, start + offset + run_value.time,
                                         run_value.cost, best.get_dictionary()))

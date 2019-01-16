@@ -6,6 +6,8 @@ from typing import List, Union
 import numpy as np
 from hpolib.abstract_benchmark import AbstractBenchmark
 
+OBJECTIVE_TIME_FACTOR = 1.5
+
 
 class EvaluationResult:
 

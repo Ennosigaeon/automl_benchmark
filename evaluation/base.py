@@ -19,6 +19,8 @@ class MongoPersistent:
     def store_results(self, benchmark: AbstractBenchmark, stats: OptimizationStatistic) -> None:
         collection = self.db[benchmark.get_meta_information()['name']]
 
+        collection.delete_one({'algorithm': stats.algorithm})
+
         d = stats.as_dict(include_evaluations=True)
         collection.insert_one(d)
 

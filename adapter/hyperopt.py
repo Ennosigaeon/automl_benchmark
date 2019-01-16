@@ -3,7 +3,7 @@ import time
 from hpolib.abstract_benchmark import AbstractBenchmark
 from hyperopt import Trials, fmin, STATUS_FAIL, STATUS_OK, tpe
 
-from adapter.base import BaseAdapter, OptimizationStatistic, EvaluationResult
+from adapter.base import BaseAdapter, OptimizationStatistic, EvaluationResult, OBJECTIVE_TIME_FACTOR
 from config import HyperoptConverter
 
 
@@ -13,8 +13,12 @@ class HyperoptAdapter(BaseAdapter):
         self.timeout = None
         self.benchmark = None
 
+    def estimate_iterations(self, objective_time: float) -> int:
+        t = 1 / (objective_time * OBJECTIVE_TIME_FACTOR + 0.04)
+        return int(self.time_limit * t)
+
     # noinspection PyMethodOverriding
-    def optimize(self, benchmark: AbstractBenchmark) -> OptimizationStatistic:
+    def optimize(self, benchmark: AbstractBenchmark, max_evals: int = 100) -> OptimizationStatistic:
         start = time.time()
         self.timeout = start + self.time_limit
         self.benchmark = benchmark
@@ -29,7 +33,7 @@ class HyperoptAdapter(BaseAdapter):
         best = fmin(self.query_objective_function,
                     space=conf,
                     algo=tpe.suggest,
-                    max_evals=100,
+                    max_evals=max_evals,
                     rstate=self.random_state,
                     trials=trials)
 
