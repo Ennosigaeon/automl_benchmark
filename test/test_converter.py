@@ -10,7 +10,7 @@ from hyperopt import hp
 from hyperopt.pyll import scope
 
 from config import MetaConfigCollection, ConfigurationSpace, TpotConverter, HyperoptConverter, RandomSearchConverter, \
-    GridSearchConverter
+    GridSearchConverter, OptunityConverter
 from config.converter import ConfigSpaceConverter
 
 
@@ -64,6 +64,13 @@ class TestConfigSpaceConverter(TestCase):
 
         actual = instance.convert(self.config)
         expected = self.__get_expected_grid_search()
+        self.assertEqual(expected, actual)
+
+    def test_optunity_convert(self):
+        instance = OptunityConverter()
+
+        actual = instance.convert(self.config)
+        expected = self.__get_expected_optunity()
         self.assertEqual(expected, actual)
 
     @staticmethod
@@ -170,5 +177,38 @@ class TestConfigSpaceConverter(TestCase):
                 'coef0': SaneEqualityArray((10,), buffer=np.array(
                     [0., 1.11111111, 2.22222222, 3.33333333, 4.44444444, 5.55555556, 6.66666667, 7.77777778, 8.88888889,
                      10.]))
+            }
+        }
+
+    @staticmethod
+    def __get_expected_optunity():
+        return {
+            'algorithm': {
+                'sklearn.svm.SVC': {
+                    'kernel': {
+                        'linear': {
+                            'C': [0.001, 1000.0],
+                            'shrinking': {'True': None, 'False': None}
+                        },
+                        'rbf': {
+                            'C': [0.001, 1000.0],
+                            'gamma': [0.0001, 8],
+                            'shrinking': {'True': None, 'False': None}
+                        },
+                        'poly': {
+                            'C': [0.001, 1000.0],
+                            'gamma': [0.0001, 8],
+                            'degree': {'1': None, '2': None, '3': None, '4': None},
+                            'coef0': [0, 10],
+                            'shrinking': {'True': None, 'False': None}
+                        },
+                        'sigmoid': {
+                            'C': [0.001, 1000.0],
+                            'gamma': [0.0001, 8],
+                            'coef0': [0, 10],
+                            'shrinking': {'True': None, 'False': None}
+                        }
+                    }
+                }
             }
         }

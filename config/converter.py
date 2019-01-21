@@ -286,3 +286,58 @@ class RoBoConverter(BaseConverter):
                 raise ValueError('RoBo can only handle floating numbers')
 
         return np.array(lower), np.array(upper), names
+
+
+class OptunityConverter(BaseConverter):
+    def convert(self, config: MetaConfigCollection) -> object:
+        d = {}
+        for key, conf in config.items():
+            d[key] = self.convert_single(conf)
+        return {'algorithm': d}
+
+    def convert_single(self, config: MetaConfig) -> object:
+        parents = set()
+        for key, param in config.items():
+            if param.has_condition():
+                parents.add(param.condition['parent'])
+
+        if len(parents) > 1:
+            raise ValueError('More than one parent is currently no supported')
+
+        for parent in parents:
+            c = config.dict[parent]
+
+            if c.type != CATEGORICAL:
+                raise ValueError('Non categorical parameter has children')
+
+            d = {}
+            for choice in c.choices:
+                d[choice] = self.__get_algo_config(config, parent, choice)
+            return {parent: d}
+
+        return self.__get_algo_config(config)
+
+    @staticmethod
+    def __get_algo_config(config: MetaConfig, parent: str = None, parent_value: str = None):
+        d = {}
+        for parameter, value in config.items():
+            if parameter == parent:
+                continue
+            if value.has_condition() and value.condition['parent'] == parent and parent_value not in \
+                    value.condition['value']:
+                continue
+
+            if value.type == UNI_INT:
+                tmp = {}
+                for i in range(value.lower, value.upper):
+                    tmp[str(i)] = None
+                d[parameter] = tmp
+            elif value.type == UNI_FLOAT:
+                d[parameter] = [value.lower, value.upper]
+            elif value.type == CATEGORICAL:
+                tmp = {}
+                for c in value.choices:
+                    tmp[str(c)] = None
+                d[parameter] = tmp
+
+        return d
