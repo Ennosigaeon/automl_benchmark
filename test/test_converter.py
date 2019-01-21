@@ -118,30 +118,30 @@ class TestConfigSpaceConverter(TestCase):
         expected_hp_space = hp.choice('estimator_type', [
             hp.choice('custom_sklearn.svm.SVC', [
                 {
-                    "kernel": "linear",
-                    'C': hp.uniform('custom_sklearn.svm.SVC_linear_C', 0.001, 1000.0),
-                    'shrinking': hp.choice('custom_sklearn.svm.SVC_linear_shrinking', [True, False])
+                    'kernel': 'linear',
+                    'C': hp.uniform('C', 0.001, 1000.0),
+                    'shrinking': hp.choice('shrinking', [True, False])
                 },
                 {
-                    "kernel": "rbf",
-                    'C': hp.uniform('custom_sklearn.svm.SVC_rbf_C', 0.001, 1000.0),
-                    'gamma': hp.uniform('custom_sklearn.svm.SVC_rbf_gamma', 0.0001, 8),
-                    'shrinking': hp.choice('custom_sklearn.svm.SVC_rbf_shrinking', [True, False])
+                    'kernel': 'rbf',
+                    'C': hp.uniform('C', 0.001, 1000.0),
+                    'gamma': hp.uniform('gamma', 0.0001, 8),
+                    'shrinking': hp.choice('shrinking', [True, False])
                 },
                 {
-                    "kernel": 'poly',
-                    'C': hp.uniform('custom_sklearn.svm.SVC_poly_C', 0.001, 1000.0),
-                    'gamma': hp.uniform('custom_sklearn.svm.SVC_poly_gamma', 0.0001, 8),
-                    'degree': scope.int(hp.quniform('custom_sklearn.svm.SVC_poly_degree', 1, 5, 1)),
-                    'coef0': hp.uniform('custom_sklearn.svm.SVC_poly_coef0', 0.0, 10.0),
-                    'shrinking': hp.choice('custom_sklearn.svm.SVC_poly_shrinking', [True, False])
+                    'kernel': 'poly',
+                    'C': hp.uniform('C', 0.001, 1000.0),
+                    'gamma': hp.uniform('gamma', 0.0001, 8),
+                    'degree': scope.int(hp.quniform('degree', 1, 5, 1)),
+                    'coef0': hp.uniform('coef0', 0.0, 10.0),
+                    'shrinking': hp.choice('shrinking', [True, False])
                 },
                 {
-                    "kernel": 'sigmoid',
-                    'C': hp.uniform('custom_sklearn.svm.SVC_sigmoid_C', 0.001, 1000.0),
-                    'gamma': hp.uniform('custom_sklearn.svm.SVC_sigmoid_gamma', 0.0001, 8),
-                    'coef0': hp.uniform('custom_sklearn.svm.SVC_sigmoid_coef0', 0.0, 10.0),
-                    'shrinking': hp.choice('custom_sklearn.svm.SVC_sigmoid_shrinking', [True, False])
+                    'kernel': 'sigmoid',
+                    'C': hp.uniform('C', 0.001, 1000.0),
+                    'gamma': hp.uniform('gamma', 0.0001, 8),
+                    'coef0': hp.uniform('coef0', 0.0, 10.0),
+                    'shrinking': hp.choice('shrinking', [True, False])
                 }
             ])
         ])
