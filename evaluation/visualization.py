@@ -15,7 +15,7 @@ def plot_results(bench: AbstractBenchmark, results: List[OptimizationStatistic])
             label='Optimum')
 
     for res in results:
-        x, y = res.as_numpy(incumbent=True)
+        x, y = res.as_numpy(incumbent=True, x_axis='iterations')
         ax.plot(x, y, label=res.algorithm)
 
     ax.set_xscale('log')
@@ -28,7 +28,7 @@ def plot_results(bench: AbstractBenchmark, results: List[OptimizationStatistic])
 
 
 if __name__ == '__main__':
-    benchmark = benchmark.Hartmann3()
+    benchmark = benchmark.Levy()
 
     persistence = MongoPersistent('10.0.2.2')
     ls = persistence.load_results(benchmark)

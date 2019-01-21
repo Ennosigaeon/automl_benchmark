@@ -1,7 +1,6 @@
 import time
 from typing import Dict, List
 
-import numpy as np
 from ConfigSpace import Configuration
 from hpolib.abstract_benchmark import AbstractBenchmark
 from smac.facade.smac_facade import SMAC
@@ -13,34 +12,38 @@ from config import ConfigSpaceConverter
 from util import multiprocessor
 
 
-def query_objective_function(benchmark: AbstractBenchmark, time_limit: float, random_state: int):
+def query_objective_function(benchmark: AbstractBenchmark, time_limit: float = None, iterations=None):
     # noinspection PyArgumentList
     cs = benchmark.get_configuration_space(ConfigSpaceConverter())
     name = benchmark.get_meta_information()['name']
 
-    scenario = Scenario({
+    d = {
         'abort_on_first_run_crash': True,
         'run_obj': 'quality',
         'deterministic': True,
         'shared-model': True,
 
-        "wallclock_limit": time_limit,
         # 'cutoff_time': 10,
-        "cs": cs,
+        'cs': cs,
 
-        "input_psmac_dirs": "/tmp/smac/{:s}/in/".format(name),
-        "output_dir": "/tmp/smac/{:s}/out/{:d}".format(name, random_state)
-    })
+        'input_psmac_dirs': '/tmp/smac/{:s}/in/'.format(name),
+        'output_dir': '/tmp/smac/{:s}/out/{:d}'.format(name, int(time.time()))
+    }
 
-    smac = SMAC(scenario=scenario, tae_runner=benchmark, rng=np.random.RandomState(random_state))
+    if time_limit is not None:
+        d['wallclock_limit'] = time_limit
+    else:
+        d['runcount_limit'] = iterations
+
+    smac = SMAC(scenario=Scenario(d), tae_runner=benchmark)
     x_star = smac.optimize()
 
     return smac.runhistory.data, x_star
 
 
 class SmacAdapter(BaseAdapter):
-    def __init__(self, time_limit: float, n_jobs: int, random_state: int = None):
-        super().__init__(time_limit, n_jobs, random_state)
+    def __init__(self, n_jobs: int, time_limit: float = None, iterations: int = None):
+        super().__init__(n_jobs, time_limit, iterations)
 
     # noinspection PyMethodOverriding
     def optimize(self, benchmark: AbstractBenchmark):
@@ -49,8 +52,7 @@ class SmacAdapter(BaseAdapter):
 
         pool = multiprocessor.NoDaemonPool(processes=self.n_jobs)
         for i in range(self.n_jobs):
-            rs = None if self.random_state is None else self.random_state + i
-            pool.apply_async(query_objective_function, args=(benchmark, self.time_limit, rs),
+            pool.apply_async(query_objective_function, args=(benchmark, self.time_limit, self.iterations),
                              callback=lambda res: statistics.add_result(self._transform_result(res[0], res[1], start)),
                              error_callback=self.log_async_error)
         pool.close()

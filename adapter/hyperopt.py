@@ -8,19 +8,25 @@ from config import HyperoptConverter
 
 
 class HyperoptAdapter(BaseAdapter):
-    def __init__(self, time_limit: float, n_jobs: int):
-        super().__init__(time_limit, n_jobs)
+    def __init__(self, n_jobs: int, time_limit: float = None, iterations: int = None, objective_time: float = None):
+        super().__init__(n_jobs, time_limit, iterations)
         self.timeout = None
         self.benchmark = None
+
+        if iterations is None:
+            if objective_time is None:
+                raise ValueError('Unable to estimate number of iterations without objective time')
+            self.iterations = self.estimate_iterations(objective_time)
+            print('Using maximal {} iterations'.format(self.iterations))
 
     def estimate_iterations(self, objective_time: float) -> int:
         t = 1 / (objective_time * OBJECTIVE_TIME_FACTOR + 0.04)
         return int(self.time_limit * t)
 
     # noinspection PyMethodOverriding
-    def optimize(self, benchmark: AbstractBenchmark, max_evals: int = 100) -> OptimizationStatistic:
+    def optimize(self, benchmark: AbstractBenchmark) -> OptimizationStatistic:
         start = time.time()
-        self.timeout = start + self.time_limit
+        self.timeout = start + self.time_limit if self.time_limit else None
         self.benchmark = benchmark
 
         statistics = OptimizationStatistic('hyperopt', start, self.n_jobs)
@@ -33,7 +39,7 @@ class HyperoptAdapter(BaseAdapter):
         best = fmin(self.query_objective_function,
                     space=conf,
                     algo=tpe.suggest,
-                    max_evals=max_evals,
+                    max_evals=self.iterations,
                     rstate=self.random_state,
                     trials=trials)
 
@@ -51,7 +57,7 @@ class HyperoptAdapter(BaseAdapter):
         return statistics
 
     def query_objective_function(self, conf):
-        if (time.time() > self.timeout):
+        if (self.timeout is not None and time.time() > self.timeout):
             return {
                 'status': STATUS_FAIL,
                 'status_fail': 'Timeout reached'

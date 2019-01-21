@@ -20,9 +20,28 @@ class CustomParameterSampler(ParameterSampler):
             yield s
 
 
-def query_objective_function(benchmark: AbstractBenchmark, time_limit: float):
+def timed_query(benchmark: AbstractBenchmark, timeout: float):
     ls = []
-    while time.time() < time_limit:
+    while time.time() < timeout:
+        # noinspection PyTypeChecker,PyArgumentList
+        conf = list(CustomParameterSampler(benchmark.get_configuration_space(RandomSearchConverter()), 1))[0]
+        res = benchmark.objective_function(conf)
+        ls.append(EvaluationResult.from_dict(res, conf))
+    return ls
+
+
+def run_counted_query(benchmark: AbstractBenchmark, iterations: int,
+                      lock: multiprocessing.Lock, index: multiprocessing.Value, ):
+    ls = []
+    while True:
+        lock.acquire()
+        i = index.value
+        index.value += 1
+        lock.release()
+
+        if i >= iterations:
+            break
+
         # noinspection PyTypeChecker,PyArgumentList
         conf = list(CustomParameterSampler(benchmark.get_configuration_space(RandomSearchConverter()), 1))[0]
         res = benchmark.objective_function(conf)
@@ -31,20 +50,30 @@ def query_objective_function(benchmark: AbstractBenchmark, time_limit: float):
 
 
 class ObjectiveRandomSearch(BaseAdapter):
-    def __init__(self, time_limit: float, n_jobs: int, random_state=None):
-        super().__init__(time_limit, n_jobs, random_state)
+    def __init__(self, n_jobs: int, time_limit: float = None, iterations: int = None, random_state=None):
+        super().__init__(n_jobs, time_limit, iterations, random_state)
+
+        m = multiprocessing.Manager()
+        self.lock = m.Lock()
+        self.index = m.Value('i', 0)
 
     # noinspection PyMethodOverriding
     def optimize(self, benchmark: AbstractBenchmark):
         start = time.time()
-        limit = start + self.time_limit
         statistics = OptimizationStatistic('Random Search', start, self.n_jobs)
 
         pool = multiprocessing.Pool(processes=self.n_jobs)
         for i in range(self.n_jobs):
-            pool.apply_async(query_objective_function, args=(benchmark, limit),
-                             callback=lambda res: statistics.add_result(res),
-                             error_callback=self.log_async_error)
+            if self.time_limit is not None:
+                timeout = start + self.time_limit
+                pool.apply_async(timed_query, args=(benchmark, timeout),
+                                 callback=lambda res: statistics.add_result(res),
+                                 error_callback=self.log_async_error)
+            else:
+                pool.apply_async(run_counted_query, args=(benchmark, self.iterations, self.lock, self.index),
+                                 callback=lambda res: statistics.add_result(res),
+                                 error_callback=self.log_async_error)
+
         pool.close()
         pool.join()
         statistics.stop_optimisation()

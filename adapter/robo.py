@@ -1,5 +1,4 @@
 import time
-from typing import Union
 
 from hpolib.abstract_benchmark import AbstractBenchmark
 from robo.fmin import bayesian_optimization
@@ -10,12 +9,15 @@ from config import RoBoConverter
 
 class RoBoAdapter(BaseAdapter):
 
-    def __init__(self, time_limit: float, n_jobs: int, random_state: Union[None, int] = None):
-        super().__init__(time_limit, n_jobs, random_state)
+    def __init__(self, n_jobs: int, time_limit: float = None, iterations: int = None):
+        super().__init__(n_jobs, time_limit, iterations)
         self.benchmark = None
 
+        if self.iterations is None:
+            raise NotImplementedError('Timeout not supported yet')
+
     # noinspection PyMethodOverriding
-    def optimize(self, benchmark: AbstractBenchmark, num_iterations: int = 5, model_type: str = 'gp_mcmc'):
+    def optimize(self, benchmark: AbstractBenchmark, model_type: str = 'gp_mcmc'):
         self.benchmark = benchmark
 
         start = time.time()
@@ -26,7 +28,7 @@ class RoBoAdapter(BaseAdapter):
         res = bayesian_optimization(lambda x: benchmark.objective_function(x)['function_value'],
                                     lower, upper,
                                     model_type=model_type,
-                                    num_iterations=num_iterations)
+                                    num_iterations=self.iterations)
         # res = fabolas(self._objective_function, lower, upper, num_iterations=4, s_min=0, s_max=0)
 
         ls = []

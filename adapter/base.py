@@ -45,7 +45,7 @@ class OptimizationStatistic:
         self.start = start
         self.end = None
 
-        self.count = 0
+        self.iterations = 0
         self.score = None
         self.best = None
         self.runtime = {}
@@ -58,7 +58,7 @@ class OptimizationStatistic:
     def stop_optimisation(self):
         self.end = time.time()
         self.evaluations = sorted(self.evaluations, key=lambda ev: ev.end)
-        self.count = len(self.evaluations)
+        self.iterations = len(self.evaluations)
 
         best_score = float("inf")
         best = None
@@ -97,14 +97,30 @@ class OptimizationStatistic:
                 current_best = ev.score
         return ls
 
-    def as_numpy(self, incumbent: bool = True):
+    def as_numpy(self, incumbent: bool = True, x_axis: str = 'iterations'):
+        """
+        Returns the evaluations as two one-dimensional numpy arrays.
+        :param incumbent: Only include improvements and not all runs
+        :param x_axis: Specifies the type of the x-axis. Can be either 'iterations' or 'time'
+        :return: x, y array
+        """
         x = []
         y = []
 
-        ls = self.incumbents if incumbent else self.evaluations
-        for ev in ls:
-            x.append(ev.end - self.start)
-            y.append(ev.score)
+        if x_axis == 'time':
+            ls = self.incumbents if incumbent else self.evaluations
+            for ev in ls:
+                x.append(ev.end - self.start)
+                y.append(ev.score)
+        elif x_axis == 'iterations':
+            current_best = float("inf")
+            for idx, ev in enumerate(self.evaluations):
+                if self.incumbents and ev.score > current_best:
+                    continue
+                x.append(idx)
+                y.append(ev.score)
+        else:
+            raise ValueError('Unknown x_axis {}'.format(x_axis))
 
         return np.array(x), np.array(y)
 
@@ -117,7 +133,7 @@ class OptimizationStatistic:
             'start': self.start,
             'end': self.end,
 
-            'count': self.count,
+            'iterations': self.iterations,
             'score': self.score,
             'best': self.best,
             'runtime': self.runtime,
@@ -128,7 +144,7 @@ class OptimizationStatistic:
     def from_dict(d: dict) -> 'OptimizationStatistic':
         instance = OptimizationStatistic(d['algorithm'], d['start'], d['n_jobs'])
         instance.end = d['end']
-        instance.count = d['count']
+        instance.iterations = d['iterations']
         instance.score = d['score']
         instance.best = d['best']
         instance.runtime = d['runtime']
@@ -145,10 +161,15 @@ class BaseAdapter(abc.ABC):
     def log_async_error(ex: Exception):
         traceback.print_exception(type(ex), ex, None)
 
-    def __init__(self, time_limit: float, n_jobs: int, random_state: Union[None, int] = None):
-        self.time_limit = time_limit
+    def __init__(self, n_jobs: int, time_limit: float = None, iterations: int = None,
+                 random_state: Union[None, int] = None):
         self.n_jobs = n_jobs
+        self.time_limit = time_limit
+        self.iterations = iterations
         self.random_state = random_state
+
+        if time_limit is None and iterations is None:
+            raise ValueError('Expecting limited runtime or limited number of iterations')
 
     @abc.abstractmethod
     def optimize(self, benchmark: AbstractBenchmark, **kwargs) -> OptimizationStatistic:

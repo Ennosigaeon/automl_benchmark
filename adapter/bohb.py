@@ -22,11 +22,11 @@ def start_worker(benchmark: AbstractBenchmark, run_id: str, id: int):
 
 class BohbAdapter(BaseAdapter):
 
-    def __init__(self, time_limit: float, n_jobs: int, random_state=None):
-        super().__init__(time_limit, n_jobs, random_state)
+    def __init__(self, n_jobs: int, time_limit: float = None, iterations: int = None):
+        super().__init__(n_jobs, time_limit, iterations)
 
-    def optimize(self, benchmark: AbstractBenchmark, min_budget: int = 9, max_budget: int = 243,
-                 n_iterations: int = 25) -> OptimizationStatistic:
+    def optimize(self, benchmark: AbstractBenchmark, min_budget: int = 0.1,
+                 max_budget: int = 1) -> OptimizationStatistic:
         start = time.time()
         statistics = OptimizationStatistic('BOHB', start, self.n_jobs)
 
@@ -42,7 +42,7 @@ class BohbAdapter(BaseAdapter):
             pool.apply_async(start_worker, args=(benchmark, run_id, i), error_callback=self.log_async_error)
 
         bohb = BOHB(configspace=conf, run_id=run_id, min_budget=min_budget, max_budget=max_budget)
-        res = bohb.run(n_iterations=n_iterations, min_n_workers=self.n_jobs)
+        res = bohb.run(n_iterations=self.iterations, min_n_workers=self.n_jobs)
 
         bohb.shutdown(shutdown_workers=True)
         ns.shutdown()

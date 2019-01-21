@@ -11,7 +11,7 @@ from config import GridSearchConverter
 def query_objective_function(candidates: ParameterGrid, benchmark: AbstractBenchmark, timeout: float,
                              lock: multiprocessing.Lock, index: multiprocessing.Value, ):
     ls = []
-    while time.time() < timeout:
+    while timeout is None or time.time() < timeout:
         lock.acquire()
         i = index.value
         index.value += 1
@@ -29,22 +29,27 @@ def query_objective_function(candidates: ParameterGrid, benchmark: AbstractBench
 
 
 class ObjectiveGridSearch(BaseAdapter):
-    def __init__(self, time_limit: float, n_jobs: int):
-        super().__init__(time_limit, n_jobs)
+    def __init__(self, n_jobs: int, time_limit: float = None, iterations: int = None):
+        super().__init__(n_jobs, time_limit, iterations)
 
         m = multiprocessing.Manager()
         self.lock = m.Lock()
         self.index = m.Value('i', 0)
 
-    def estimate_grid_size(self, objective_time: float, dimensions: int) -> int:
-        t = objective_time * OBJECTIVE_TIME_FACTOR + 0.0005
-        n = (self.time_limit / t) ** (1 / dimensions)
+    def estimate_grid_size(self, dimensions: int, objective_time: float = None) -> int:
+        if self.time_limit is not None:
+            t = objective_time * OBJECTIVE_TIME_FACTOR + 0.0005
+            n = (self.time_limit / t) ** (1 / dimensions)
+        else:
+            n = self.iterations ** (1 / dimensions)
+
         return int(max(10, n))
 
     # noinspection PyMethodOverriding
     def optimize(self, benchmark: AbstractBenchmark, grid_size: int = 10):
         start = time.time()
-        timeout = start + self.time_limit
+        timeout = start + self.time_limit if self.time_limit else None
+
         statistics = OptimizationStatistic('Grid Search', start, self.n_jobs)
 
         # noinspection PyArgumentList
