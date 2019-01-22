@@ -6,6 +6,7 @@ import benchmark
 from adapter.bohb import BohbAdapter
 from adapter.grid_search import ObjectiveGridSearch
 from adapter.hyperopt import HyperoptAdapter
+from adapter.optunity_adapter import OptunityAdapter
 from adapter.random_search import ObjectiveRandomSearch
 from adapter.robo import RoBoAdapter
 from adapter.smac import SmacAdapter
@@ -26,11 +27,12 @@ config_dict = {
     'smac': True,
     'hyperopt': True,
     'bohb': True,
-    'robo': False
+    'robo': False,
+    'optunity': True
 }
 config = Namespace(**config_dict)
 
-benchmark = benchmark.Levy()
+benchmark = benchmark.Branin()
 ls = []
 # persistence.clear_old_results(benchmark)
 
@@ -97,6 +99,15 @@ if config.robo:
     print('Start robo')
     robo = RoBoAdapter(config.n_jobs, config.timeout, config.iterations)
     stats = robo.optimize(benchmark)
+    persistence.store_results(benchmark, stats)
+    ls.append(stats)
+    print('Finished after {}s'.format(stats.end - stats.start))
+    print(stats)
+
+if config.optunity:
+    print('Start optunity')
+    optunity = OptunityAdapter(config.n_jobs, config.timeout, config.iterations)
+    stats = optunity.optimize(benchmark)
     persistence.store_results(benchmark, stats)
     ls.append(stats)
     print('Finished after {}s'.format(stats.end - stats.start))

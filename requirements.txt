@@ -1,3 +1,4 @@
+optunity
 smac
 scikit-learn
 scipy
