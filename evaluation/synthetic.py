@@ -1,4 +1,5 @@
 import logging
+import time
 from argparse import Namespace
 
 import benchmark
@@ -18,7 +19,7 @@ config_dict = {
     'n_jobs': 4,
     'timeout': None,
     'iterations': 100,
-    'seed': 42,
+    'seed': int(time.time()),
 
     'random_search': True,
     'grid_search': True,
@@ -38,7 +39,7 @@ objective_time = None
 # Random Search
 if config.random_search:
     print('Start random search')
-    rs = ObjectiveRandomSearch(config.n_jobs, config.timeout, config.iterations)
+    rs = ObjectiveRandomSearch(config.n_jobs, config.timeout, config.iterations, config.seed)
     stats = rs.optimize(benchmark)
     persistence.store_results(benchmark, stats)
 
@@ -64,7 +65,7 @@ if config.grid_search:
 # SMAC
 if config.smac:
     print('Start SMAC')
-    smac = SmacAdapter(config.n_jobs, config.timeout, config.iterations)
+    smac = SmacAdapter(config.n_jobs, config.timeout, config.iterations, config.seed)
     stats = smac.optimize(benchmark)
     persistence.store_results(benchmark, stats)
     ls.append(stats)

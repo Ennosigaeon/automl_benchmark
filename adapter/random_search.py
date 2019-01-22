@@ -1,6 +1,7 @@
 import multiprocessing
 import time
 
+import numpy as np
 from hpolib.abstract_benchmark import AbstractBenchmark
 from sklearn.model_selection import ParameterSampler
 from sklearn.utils import check_random_state
@@ -20,18 +21,21 @@ class CustomParameterSampler(ParameterSampler):
             yield s
 
 
-def timed_query(benchmark: AbstractBenchmark, timeout: float):
+def timed_query(benchmark: AbstractBenchmark, timeout: float, seed:int):
+    random_state = np.random.RandomState(seed)
     ls = []
     while time.time() < timeout:
         # noinspection PyTypeChecker,PyArgumentList
-        conf = list(CustomParameterSampler(benchmark.get_configuration_space(RandomSearchConverter()), 1))[0]
+        conf = list(CustomParameterSampler(benchmark.get_configuration_space(RandomSearchConverter()), 1,
+                                           random_state=random_state))[0]
         res = benchmark.objective_function(conf)
         ls.append(EvaluationResult.from_dict(res, conf))
     return ls
 
 
-def run_counted_query(benchmark: AbstractBenchmark, iterations: int,
+def run_counted_query(benchmark: AbstractBenchmark, iterations: int, seed: int,
                       lock: multiprocessing.Lock, index: multiprocessing.Value, ):
+    random_state = np.random.RandomState(seed)
     ls = []
     while True:
         lock.acquire()
@@ -43,15 +47,19 @@ def run_counted_query(benchmark: AbstractBenchmark, iterations: int,
             break
 
         # noinspection PyTypeChecker,PyArgumentList
-        conf = list(CustomParameterSampler(benchmark.get_configuration_space(RandomSearchConverter()), 1))[0]
+        conf = list(CustomParameterSampler(benchmark.get_configuration_space(RandomSearchConverter()), 1,
+                                           random_state=random_state))[0]
         res = benchmark.objective_function(conf)
         ls.append(EvaluationResult.from_dict(res, conf))
     return ls
 
 
 class ObjectiveRandomSearch(BaseAdapter):
-    def __init__(self, n_jobs: int, time_limit: float = None, iterations: int = None, random_state=None):
-        super().__init__(n_jobs, time_limit, iterations, random_state)
+    def __init__(self, n_jobs: int, time_limit: float = None, iterations: int = None, seed: int = None):
+        super().__init__(n_jobs, time_limit, iterations, seed)
+
+        if self.seed is None:
+            raise ValueError('seed is required for random search')
 
         m = multiprocessing.Manager()
         self.lock = m.Lock()
@@ -66,11 +74,12 @@ class ObjectiveRandomSearch(BaseAdapter):
         for i in range(self.n_jobs):
             if self.time_limit is not None:
                 timeout = start + self.time_limit
-                pool.apply_async(timed_query, args=(benchmark, timeout),
+                pool.apply_async(timed_query, args=(benchmark, timeout, self.seed + i),
                                  callback=lambda res: statistics.add_result(res),
                                  error_callback=self.log_async_error)
             else:
-                pool.apply_async(run_counted_query, args=(benchmark, self.iterations, self.lock, self.index),
+                pool.apply_async(run_counted_query,
+                                 args=(benchmark, self.iterations, self.seed + i, self.lock, self.index),
                                  callback=lambda res: statistics.add_result(res),
                                  error_callback=self.log_async_error)
 

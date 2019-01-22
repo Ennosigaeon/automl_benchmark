@@ -115,17 +115,20 @@ class OptimizationStatistic:
         elif x_axis == 'iterations':
             current_best = float("inf")
             for idx, ev in enumerate(self.evaluations):
-                if self.incumbents and ev.score > current_best:
+                if incumbent and ev.score >= current_best:
                     continue
                 x.append(idx)
                 y.append(ev.score)
+                current_best = ev.score
+            x.append(len(self.evaluations))
+            y.append(current_best)
         else:
             raise ValueError('Unknown x_axis {}'.format(x_axis))
 
         return np.array(x), np.array(y)
 
     def as_dict(self, include_evaluations=False):
-        ls = self.incumbents if include_evaluations else []
+        ls = self.evaluations if include_evaluations else []
         return {
             'algorithm': self.algorithm,
             'n_jobs': self.n_jobs,
@@ -162,11 +165,11 @@ class BaseAdapter(abc.ABC):
         traceback.print_exception(type(ex), ex, None)
 
     def __init__(self, n_jobs: int, time_limit: float = None, iterations: int = None,
-                 random_state: Union[None, int] = None):
+                 seed: Union[None, int] = None):
         self.n_jobs = n_jobs
         self.time_limit = time_limit
         self.iterations = iterations
-        self.random_state = random_state
+        self.seed = seed
 
         if time_limit is None and iterations is None:
             raise ValueError('Expecting limited runtime or limited number of iterations')

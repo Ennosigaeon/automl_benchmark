@@ -1,5 +1,6 @@
 import time
 
+import numpy as np
 from hpolib.abstract_benchmark import AbstractBenchmark
 from hyperopt import Trials, fmin, STATUS_FAIL, STATUS_OK, tpe
 
@@ -8,8 +9,9 @@ from config import HyperoptConverter
 
 
 class HyperoptAdapter(BaseAdapter):
-    def __init__(self, n_jobs: int, time_limit: float = None, iterations: int = None, objective_time: float = None):
-        super().__init__(n_jobs, time_limit, iterations)
+    def __init__(self, n_jobs: int, time_limit: float = None, iterations: int = None, objective_time: float = None,
+                 seed: int = None):
+        super().__init__(n_jobs, time_limit, iterations, seed)
         self.timeout = None
         self.benchmark = None
 
@@ -33,6 +35,7 @@ class HyperoptAdapter(BaseAdapter):
 
         # noinspection PyArgumentList
         conf = benchmark.get_configuration_space(HyperoptConverter(as_scope=False))
+        random_state = np.random.RandomState(self.seed) if self.seed is not None else None
 
         trials = Trials()
         # trials = MongoTrials('mongo://10.0.2.2:27017/hyperopt/jobs', exp_key='exp1')
@@ -40,7 +43,7 @@ class HyperoptAdapter(BaseAdapter):
                     space=conf,
                     algo=tpe.suggest,
                     max_evals=self.iterations,
-                    rstate=self.random_state,
+                    rstate=random_state,
                     trials=trials)
 
         ls = []

@@ -42,7 +42,9 @@ class BohbAdapter(BaseAdapter):
             pool.apply_async(start_worker, args=(benchmark, run_id, i), error_callback=self.log_async_error)
 
         bohb = BOHB(configspace=conf, run_id=run_id, min_budget=min_budget, max_budget=max_budget)
-        res = bohb.run(n_iterations=self.iterations, min_n_workers=self.n_jobs)
+        # Fix number of iterations, such that in total self.iterations objective function is called
+        n = (self.iterations * 0.9) / 6
+        res = bohb.run(n_iterations=n, min_n_workers=self.n_jobs)
 
         bohb.shutdown(shutdown_workers=True)
         ns.shutdown()
