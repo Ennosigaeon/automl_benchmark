@@ -38,9 +38,8 @@ class EvaluationResult:
 
 class OptimizationStatistic:
 
-    def __init__(self, algorithm: str, start: float, n_jobs: int):
+    def __init__(self, algorithm: str, start: float):
         self.algorithm = algorithm
-        self.n_jobs = n_jobs
 
         self.start = start
         self.end = None
@@ -115,13 +114,10 @@ class OptimizationStatistic:
         elif x_axis == 'iterations':
             current_best = float("inf")
             for idx, ev in enumerate(self.evaluations):
-                if incumbent and ev.score >= current_best:
-                    continue
+                if not incumbent or ev.score < current_best:
+                    current_best = ev.score
                 x.append(idx)
-                y.append(ev.score)
-                current_best = ev.score
-            x.append(len(self.evaluations))
-            y.append(current_best)
+                y.append(current_best)
         else:
             raise ValueError('Unknown x_axis {}'.format(x_axis))
 
@@ -131,7 +127,6 @@ class OptimizationStatistic:
         ls = self.evaluations if include_evaluations else []
         return {
             'algorithm': self.algorithm,
-            'n_jobs': self.n_jobs,
 
             'start': self.start,
             'end': self.end,
@@ -145,7 +140,7 @@ class OptimizationStatistic:
 
     @staticmethod
     def from_dict(d: dict) -> 'OptimizationStatistic':
-        instance = OptimizationStatistic(d['algorithm'], d['start'], d['n_jobs'])
+        instance = OptimizationStatistic(d['algorithm'], d['start'])
         instance.end = d['end']
         instance.iterations = d['iterations']
         instance.score = d['score']
@@ -156,6 +151,36 @@ class OptimizationStatistic:
 
     def __str__(self):
         return str(self.as_dict(include_evaluations=False))
+
+
+class BenchmarkResult:
+
+    def __init__(self, benchmark: Union[None, AbstractBenchmark], n_jobs: int, seed: int):
+        self.benchmark = benchmark
+        self.n_jobs = n_jobs
+        self.seed = seed
+        self.solvers = []
+
+    def add_result(self, stats: OptimizationStatistic):
+        self.solvers.append(stats)
+
+    @property
+    def name(self):
+        return self.benchmark.get_meta_information()['name']
+
+    def as_dict(self):
+        return {
+            'name': self.benchmark.get_meta_information()['name'],
+            'seed': self.seed,
+            'n_jobs': self.n_jobs,
+            'solvers': []
+        }
+
+    @staticmethod
+    def from_dict(d: dict) -> 'BenchmarkResult':
+        instance = BenchmarkResult(None, d['n_jobs'], d['seed'])
+        instance.solvers = [OptimizationStatistic.from_dict(f) for f in d['solvers']]
+        return instance
 
 
 class BaseAdapter(abc.ABC):

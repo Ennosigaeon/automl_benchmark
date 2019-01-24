@@ -21,7 +21,7 @@ class RoBoAdapter(BaseAdapter):
         self.benchmark = benchmark
 
         start = time.time()
-        statistics = OptimizationStatistic('RoBo {}'.format(model_type), start, self.n_jobs)
+        statistics = OptimizationStatistic('RoBo {}'.format(model_type), start)
         # noinspection PyArgumentList
         lower, upper, names = benchmark.get_configuration_space(RoBoConverter())
 

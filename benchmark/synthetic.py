@@ -232,7 +232,33 @@ class Levy(synthetic_functions.Levy):
         return converter.convert_single(MetaConfig(cs))
 
 
-# Rosenbrock2D, Rosenbrock5D and Rosenbrock10D are not implemented
+# Rosenbrock2D and Rosenbrock5D are not implemented
+
+class Rosenbrock10D(synthetic_functions.rosenbrock.Rosenbrock10D):
+
+    @_dict_as_array
+    @AbstractBenchmark._configuration_as_array
+    @meta_information
+    def objective_function(self, x, **kwargs):
+        y = 0
+        d = 10
+        for i in range(d - 1):
+            y += 100 * (x[i + 1] - x[i] ** 2) ** 2
+            y += (x[i] - 1) ** 2
+
+        return {'function_value': y}
+
+    @staticmethod
+    def get_configuration_space(converter: BaseConverter = NoopConverter()):
+        cs = {}
+        for i in range(10):
+            cs[f"x{i}"] = {
+                "type": "uniform_float",
+                "lower": 0,
+                "upper": 1
+            }
+        return converter.convert_single(MetaConfig(cs))
+
 
 class Rosenbrock20D(synthetic_functions.rosenbrock.Rosenbrock20D):
 

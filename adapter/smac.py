@@ -55,7 +55,7 @@ class SmacAdapter(BaseAdapter):
     # noinspection PyMethodOverriding
     def optimize(self, benchmark: AbstractBenchmark):
         start = time.time()
-        statistics = OptimizationStatistic('SMAC', start, self.n_jobs)
+        statistics = OptimizationStatistic('SMAC', start)
 
         pool = multiprocessor.NoDaemonPool(processes=self.n_jobs)
         for i in range(self.n_jobs):

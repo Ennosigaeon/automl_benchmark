@@ -28,7 +28,7 @@ class BohbAdapter(BaseAdapter):
     def optimize(self, benchmark: AbstractBenchmark, min_budget: int = 0.1,
                  max_budget: int = 1) -> OptimizationStatistic:
         start = time.time()
-        statistics = OptimizationStatistic('BOHB', start, self.n_jobs)
+        statistics = OptimizationStatistic('BOHB', start)
 
         run_id = '{}_{}'.format(benchmark.get_meta_information()['name'], 0)
         ns = hpns.NameServer(run_id=run_id, host=nameserver, port=None)

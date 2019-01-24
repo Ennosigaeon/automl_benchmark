@@ -68,7 +68,7 @@ class ObjectiveRandomSearch(BaseAdapter):
     # noinspection PyMethodOverriding
     def optimize(self, benchmark: AbstractBenchmark):
         start = time.time()
-        statistics = OptimizationStatistic('Random Search', start, self.n_jobs)
+        statistics = OptimizationStatistic('Random Search', start)
 
         pool = multiprocessing.Pool(processes=self.n_jobs)
         for i in range(self.n_jobs):

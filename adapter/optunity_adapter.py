@@ -1,4 +1,3 @@
-import sys
 import time
 
 import optunity
@@ -37,7 +36,7 @@ class OptunityAdapter(BaseAdapter):
     def optimize(self, benchmark: AbstractBenchmark, **kwargs) -> OptimizationStatistic:
         start = time.time()
         self.benchmark = benchmark
-        statistics = OptimizationStatistic('Optunity', start, self.n_jobs)
+        statistics = OptimizationStatistic('Optunity', start)
 
         # noinspection PyArgumentList
         conf = benchmark.get_configuration_space(OptunityConverter())
@@ -45,14 +44,16 @@ class OptunityAdapter(BaseAdapter):
         tree = search_spaces.SearchTree(conf)
         box = tree.to_box()
 
-        f = tree.wrap_decoder(self.objective_function)
+        f = logged(self.objective_function)
+        f = tree.wrap_decoder(f)
         f = _wrap_hard_box_constraints(f, box, 10000)
 
         suggestion = suggest_solver(self.iterations, "particle swarm", **box)
         solver = make_solver(**suggestion)
 
         solution, details = optimize(solver, f, maximize=False, max_evals=self.iterations, decoder=tree.decode,
-                                     pmap=optunity.parallel.pmap)
+                                     pmap=map)
+                                     # pmap=optunity.parallel.create_pmap(self.n_jobs))
 
         ls = []
         for meta, value in f.call_log.data.items():
@@ -61,11 +62,16 @@ class OptunityAdapter(BaseAdapter):
             end = d.pop('end', None)
             ls.append(EvaluationResult(start, end, value, d))
 
+        # Optunity sometimes does not use self.iterations but a little less. Fix number for plotting
+        while len(ls) < self.iterations:
+            ls.append(ls[-1])
+
+        del f.call_log
+
         statistics.add_result(ls)
         statistics.stop_optimisation()
 
         return statistics
 
-    @logged
     def objective_function(self, **kwargs):
         return self.benchmark.objective_function(kwargs)

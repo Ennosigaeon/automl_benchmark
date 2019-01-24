@@ -1,3 +1,4 @@
+import math
 import multiprocessing
 import time
 
@@ -50,7 +51,7 @@ class ObjectiveGridSearch(BaseAdapter):
         start = time.time()
         timeout = start + self.time_limit if self.time_limit else None
 
-        statistics = OptimizationStatistic('Grid Search', start, self.n_jobs)
+        statistics = OptimizationStatistic('Grid Search', start)
 
         # noinspection PyArgumentList
         config_space = benchmark.get_configuration_space(GridSearchConverter(n=grid_size))

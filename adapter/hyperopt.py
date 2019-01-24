@@ -31,7 +31,7 @@ class HyperoptAdapter(BaseAdapter):
         self.timeout = start + self.time_limit if self.time_limit else None
         self.benchmark = benchmark
 
-        statistics = OptimizationStatistic('hyperopt', start, self.n_jobs)
+        statistics = OptimizationStatistic('hyperopt', start)
 
         # noinspection PyArgumentList
         conf = benchmark.get_configuration_space(HyperoptConverter(as_scope=False))
