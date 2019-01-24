@@ -9,14 +9,17 @@ from adapter.base import OptimizationStatistic, EvaluationResult, BaseAdapter, O
 from config import GridSearchConverter
 
 
-def query_objective_function(candidates: ParameterGrid, benchmark: AbstractBenchmark, timeout: float,
-                             lock: multiprocessing.Lock, index: multiprocessing.Value, ):
+def query_objective_function(candidates: ParameterGrid, benchmark: AbstractBenchmark, iterations: int, timeout: float,
+                             lock: multiprocessing.Lock, index: multiprocessing.Value):
     ls = []
     while timeout is None or time.time() < timeout:
         lock.acquire()
         i = index.value
         index.value += 1
         lock.release()
+
+        if iterations is not None and i > iterations:
+            break
 
         try:
             config = candidates[i]
@@ -42,9 +45,9 @@ class ObjectiveGridSearch(BaseAdapter):
             t = objective_time * OBJECTIVE_TIME_FACTOR + 0.0005
             n = (self.time_limit / t) ** (1 / dimensions)
         else:
-            n = self.iterations ** (1 / dimensions)
+            n = math.ceil(self.iterations ** (1 / dimensions))
 
-        return int(max(10, n))
+        return int(max(1, n))
 
     # noinspection PyMethodOverriding
     def optimize(self, benchmark: AbstractBenchmark, grid_size: int = 10):
@@ -59,7 +62,8 @@ class ObjectiveGridSearch(BaseAdapter):
 
         pool = multiprocessing.Pool(processes=self.n_jobs)
         for i in range(self.n_jobs):
-            pool.apply_async(query_objective_function, args=(candidates, benchmark, timeout, self.lock, self.index),
+            pool.apply_async(query_objective_function,
+                             args=(candidates, benchmark, self.iterations, timeout, self.lock, self.index),
                              callback=lambda res: statistics.add_result(res),
                              error_callback=self.log_async_error)
 
