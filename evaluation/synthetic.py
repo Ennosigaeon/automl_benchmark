@@ -35,7 +35,7 @@ def run(persistence: MongoPersistence, b: AbstractBenchmark):
         'smac': True,
         'hyperopt': True,
         'bohb': True,
-        'robo': False,
+        'robo': True,
         'optunity': True,
         'btb': True
     }
@@ -106,7 +106,7 @@ def run(persistence: MongoPersistence, b: AbstractBenchmark):
     if config.robo:
         print('Start robo')
         robo = RoBoAdapter(config.n_jobs, config.timeout, config.iterations)
-        stats = robo.optimize(b)
+        stats = robo.optimize(b, model_type='gp')
         benchmark_result.add_result(stats)
         persistence.store_results(benchmark_result, stats)
         print('Finished after {}s'.format(stats.end - stats.start))
@@ -135,6 +135,6 @@ def run(persistence: MongoPersistence, b: AbstractBenchmark):
 
 if __name__ == '__main__':
     persistence = MongoPersistence('10.0.2.2')
-    b = benchmark.Levy()
+    b = benchmark.Branin()
     for i in range(10):
         run(persistence, b)

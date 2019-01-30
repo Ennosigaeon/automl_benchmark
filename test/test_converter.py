@@ -10,7 +10,7 @@ from hyperopt import hp
 from hyperopt.pyll import scope
 
 from config import MetaConfigCollection, ConfigurationSpace, TpotConverter, HyperoptConverter, RandomSearchConverter, \
-    GridSearchConverter, OptunityConverter, BtbConverter
+    GridSearchConverter, OptunityConverter, BtbConverter, SpearmintConverter
 from config.converter import ConfigSpaceConverter
 
 
@@ -78,6 +78,13 @@ class TestConfigSpaceConverter(TestCase):
 
         actual = instance.convert(self.config)
         expected = self.__get_expected_btb()
+        self.assertEqual(expected, actual)
+
+    def test_spearmint_convert(self):
+        instance = SpearmintConverter()
+
+        actual = instance.convert(self.config)
+        expected = self.__get_expected_spearmint()
         self.assertEqual(expected, actual)
 
     @staticmethod
@@ -262,3 +269,48 @@ class TestConfigSpaceConverter(TestCase):
                 }
             }
         ]
+
+    @staticmethod
+    def __get_expected_spearmint():
+        return {
+            'sklearn.svm.SVC': {
+                'experiment-name': 'sklearn.svm.SVC',
+                'likelihood': 'NOISELESS',
+                'variables': {
+                    'kernel': {
+                        'type': 'ENUM',
+                        'size': 1,
+                        'options': ['linear', 'rbf', 'poly', 'sigmoid']}
+                    ,
+                    'C': {
+                        'type': 'FLOAT',
+                        'size': 1,
+                        'min': 0.001,
+                        'max': 1000
+                    },
+                    'shrinking': {
+                        'type': 'ENUM',
+                        'size': 1,
+                        'options': [True, False]
+                    },
+                    'degree': {
+                        'type': 'INT',
+                        'size': 1,
+                        'min': 1,
+                        'max': 5
+                    },
+                    'gamma': {
+                        'type': 'FLOAT',
+                        'size': 1,
+                        'min': 0.0001,
+                        'max': 8
+                    },
+                    'coef0': {
+                        'type': 'FLOAT',
+                        'size': 1,
+                        'min': 0.0,
+                        'max': 10.0
+                    }
+                }
+            }
+        }

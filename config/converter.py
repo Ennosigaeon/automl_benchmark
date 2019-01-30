@@ -39,11 +39,11 @@ class NoopConverter(BaseConverter):
 class ConfigSpaceConverter(BaseConverter):
 
     def convert(self, config: MetaConfigCollection) -> Dict[str, ConfigurationSpace]:
-        """
+        '''
         Converting input JSON to SMAC ConfigurationSpace
         :param config: JSON file withe configurations
         :return: ConfigurationSpace
-        """
+        '''
 
         from .util import ConfigSpace as util
 
@@ -58,12 +58,12 @@ class ConfigSpaceConverter(BaseConverter):
         return configs
 
     def convert_single(self, estimator: MetaConfig) -> ConfigurationSpace:
-        """
+        '''
         Builds a ConfigurationSpace for a single estimator
         :param estimator: A dict in form
         {parameter_name1: {Type:XY, Min: z1, Max: z2 condition: {parent: p, value: [v]}}parameter_name2 ...}
         :return: ConfigurationSpace for input estimator
-        """
+        '''
         cs = ConfigurationSpace()
 
         for name, entry in estimator.items():
@@ -87,12 +87,12 @@ class ConfigSpaceConverter(BaseConverter):
 
 class TpotConverter(BaseConverter):
     def convert(self, config: MetaConfigCollection, points: int = 10) -> dict:
-        """
+        '''
         Converting input JSON to TPOT config_dict
         :param points: Amount of points a uniform_float should split in to
         :param config: Name of JSON file withe configurations
         :return: config_dict for TPOTClassifier() or TPOTRegressor()
-        """
+        '''
         config_dict = dict()
         for algorithm, conf in config.items():
             d = self.convert_single(conf, points)
@@ -119,12 +119,12 @@ class HyperoptConverter(BaseConverter):
         self.as_scope = as_scope
 
     def convert(self, config: MetaConfigCollection) -> hp.choice:
-        """
+        '''
         Converting input JSON to Hyperopt ConfigurationSpace
         :param config: JSON file withe configurations
         :param as_scope:
         :return: ConfigurationSpace
-        """
+        '''
         config_space = []
         for key, conf in config.items():
             d = self.convert_single(conf, key)
@@ -184,8 +184,8 @@ class HyperoptConverter(BaseConverter):
     @staticmethod
     @scope.define
     def generate_sklearn_estimator(estimator_name, *args, **kwargs):
-        module_name = estimator_name.rpartition(".")[0]
-        class_name = estimator_name.split(".")[-1]
+        module_name = estimator_name.rpartition('.')[0]
+        class_name = estimator_name.split('.')[-1]
         module = import_module(module_name)
         class_ = getattr(module, class_name)
         return class_(*args, **kwargs)
@@ -379,3 +379,42 @@ class OptunityConverter(BaseConverter):
                 d[parameter] = tmp
 
         return d
+
+
+class SpearmintConverter(BaseConverter):
+    def convert(self, config: MetaConfigCollection) -> object:
+        d = {}
+        for key, conf in config.items():
+            d[key] = self.convert_single(conf, algorithm=key)
+        return d
+
+    def convert_single(self, config: MetaConfig, algorithm: str = 'foo') -> object:
+        variables = {}
+
+        for name, value in config.items():
+            if value.type == UNI_FLOAT:
+                variables[name] = {
+                    'type': 'FLOAT',
+                    'size': 1,
+                    'min': value.lower,
+                    'max': value.upper
+                }
+            if value.type == UNI_INT:
+                variables[name] = {
+                    'type': 'INT',
+                    'size': 1,
+                    'min': value.lower,
+                    'max': value.upper
+                }
+            if value.type == CATEGORICAL:
+                variables[name] = {
+                    'type': 'ENUM',
+                    'size': 1,
+                    'options': value.choices
+                }
+
+        return {
+            'experiment-name': algorithm,
+            'likelihood': 'NOISELESS',
+            'variables': variables
+        }
