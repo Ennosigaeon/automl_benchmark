@@ -7,6 +7,7 @@ from hpolib.abstract_benchmark import AbstractBenchmark
 import benchmark
 from adapter.base import BenchmarkResult
 from adapter.bohb import BohbAdapter
+from adapter.btb_adapter import BtbAdapter
 from adapter.grid_search import ObjectiveGridSearch
 from adapter.hyperopt import HyperoptAdapter
 from adapter.optunity_adapter import OptunityAdapter
@@ -35,7 +36,8 @@ def run(persistence: MongoPersistence, b: AbstractBenchmark):
         'hyperopt': True,
         'bohb': True,
         'robo': False,
-        'optunity': True
+        'optunity': True,
+        'btb': True
     }
     config = Namespace(**config_dict)
 
@@ -110,10 +112,21 @@ def run(persistence: MongoPersistence, b: AbstractBenchmark):
         print('Finished after {}s'.format(stats.end - stats.start))
         print(stats)
 
+    # Optunity
     if config.optunity:
         print('Start optunity')
         optunity = OptunityAdapter(config.n_jobs, config.timeout, config.iterations)
         stats = optunity.optimize(b)
+        benchmark_result.add_result(stats)
+        persistence.store_results(benchmark_result, stats)
+        print('Finished after {}s'.format(stats.end - stats.start))
+        print(stats)
+
+    # BTB
+    if config.btb:
+        print('Start btb')
+        btb = BtbAdapter(config.n_jobs, config.timeout, config.iterations)
+        stats = btb.optimize(b)
         benchmark_result.add_result(stats)
         persistence.store_results(benchmark_result, stats)
         print('Finished after {}s'.format(stats.end - stats.start))

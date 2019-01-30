@@ -191,6 +191,44 @@ class HyperoptConverter(BaseConverter):
         return class_(*args, **kwargs)
 
 
+class BtbConverter(BaseConverter):
+    def convert(self, config: MetaConfigCollection) -> list:
+        ls = []
+        for algorithm, conf in config.items():
+            ls.append(self.convert_single(conf, algorithm))
+        return ls
+
+    # noinspection PyMethodOverriding
+    def convert_single(self, config: MetaConfig, name: str = 'foo') -> dict:
+        hyperparamters = {}
+        root = []
+        conditional = {}
+        for key, value in config.items():
+            if value.type == CATEGORICAL:
+                t = 'bool' if value.choices[0] in [True, False] else 'string'
+                hyperparamters[key] = {'type': t, 'values': value.choices}
+            if value.type == UNI_INT:
+                hyperparamters[key] = {'type': 'int', 'range': [value.lower, value.upper]}
+            if value.type == UNI_FLOAT:
+                hyperparamters[key] = {'type': 'float', 'range': [value.lower, value.upper]}
+
+            if value.condition is None:
+                root.append(key)
+            else:
+                d = conditional.setdefault(value.condition['parent'], {})
+                for v in value.condition['value']:
+                    d.setdefault(v, []).append(key)
+
+        d = {
+            'name': name,
+            'class': name,
+            'hyperparameters': hyperparamters,
+            'root_hyperparameters': root,
+            'conditional_hyperparameters': conditional
+        }
+        return d
+
+
 class NaiveSearchConverter(BaseConverter, abc.ABC):
 
     def __init__(self):

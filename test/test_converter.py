@@ -10,7 +10,7 @@ from hyperopt import hp
 from hyperopt.pyll import scope
 
 from config import MetaConfigCollection, ConfigurationSpace, TpotConverter, HyperoptConverter, RandomSearchConverter, \
-    GridSearchConverter, OptunityConverter
+    GridSearchConverter, OptunityConverter, BtbConverter
 from config.converter import ConfigSpaceConverter
 
 
@@ -71,6 +71,13 @@ class TestConfigSpaceConverter(TestCase):
 
         actual = instance.convert(self.config)
         expected = self.__get_expected_optunity()
+        self.assertEqual(expected, actual)
+
+    def test_btb_convert(self):
+        instance = BtbConverter()
+
+        actual = instance.convert(self.config)
+        expected = self.__get_expected_btb()
         self.assertEqual(expected, actual)
 
     @staticmethod
@@ -212,3 +219,46 @@ class TestConfigSpaceConverter(TestCase):
                 }
             }
         }
+
+    @staticmethod
+    def __get_expected_btb():
+        return [
+            {
+                'name': 'sklearn.svm.SVC',
+                'class': 'sklearn.svm.SVC',
+                'hyperparameters': {
+                    'C': {
+                        'type': 'float',
+                        'range': [0.001, 1000.0]
+                    },
+                    'gamma': {
+                        'type': 'float',
+                        'range': [0.0001, 8],
+                    },
+                    'kernel': {
+                        'type': 'string',
+                        'values': ['linear', 'rbf', 'poly', 'sigmoid']
+                    },
+                    'degree': {
+                        'type': 'int',
+                        'range': [1, 5]
+                    },
+                    'coef0': {
+                        'type': 'float',
+                        'range': [0.0, 10.0]
+                    },
+                    'shrinking': {
+                        'type': 'bool',
+                        'values': [True, False]
+                    }
+                },
+                'root_hyperparameters': ['kernel', 'C', 'shrinking'],
+                'conditional_hyperparameters': {
+                    'kernel': {
+                        'rbf': ['gamma'],
+                        'sigmoid': ['gamma', 'coef0'],
+                        'poly': ['gamma', 'degree', 'coef0']
+                    }
+                }
+            }
+        ]
