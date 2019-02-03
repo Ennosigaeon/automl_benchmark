@@ -26,8 +26,8 @@ def logged(f):
 
 class OptunityAdapter(BaseAdapter):
 
-    def __init__(self, n_jobs: int, time_limit: float = None, iterations: int = None):
-        super().__init__(n_jobs, time_limit, iterations)
+    def __init__(self, n_jobs: int, time_limit: float = None, iterations: int = None, seed: int = None):
+        super().__init__(n_jobs, time_limit, iterations, seed)
         self.benchmark = None
 
         if self.iterations is None:

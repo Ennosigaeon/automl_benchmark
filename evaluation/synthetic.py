@@ -85,7 +85,7 @@ def run(persistence: MongoPersistence, b: AbstractBenchmark):
     # hyperopt
     if config.hyperopt:
         print('Start hyperopt')
-        hyperopt = HyperoptAdapter(config.n_jobs, config.timeout, config.iterations)
+        hyperopt = HyperoptAdapter(config.n_jobs, config.timeout, config.iterations, config.seed)
         stats = hyperopt.optimize(b)
         benchmark_result.add_result(stats)
         persistence.store_results(benchmark_result, stats)
@@ -95,7 +95,7 @@ def run(persistence: MongoPersistence, b: AbstractBenchmark):
     # bohb
     if config.bohb:
         print('Start bohb')
-        bohb = BohbAdapter(config.n_jobs, config.timeout, config.iterations)
+        bohb = BohbAdapter(config.n_jobs, config.timeout, config.iterations, config.seed)
         stats = bohb.optimize(b)
         benchmark_result.add_result(stats)
         persistence.store_results(benchmark_result, stats)
@@ -105,7 +105,7 @@ def run(persistence: MongoPersistence, b: AbstractBenchmark):
     # RoBo
     if config.robo:
         print('Start robo')
-        robo = RoBoAdapter(config.n_jobs, config.timeout, config.iterations)
+        robo = RoBoAdapter(config.n_jobs, config.timeout, config.iterations, config.seed)
         stats = robo.optimize(b, model_type='gp')
         benchmark_result.add_result(stats)
         persistence.store_results(benchmark_result, stats)
@@ -115,7 +115,7 @@ def run(persistence: MongoPersistence, b: AbstractBenchmark):
     # Optunity
     if config.optunity:
         print('Start optunity')
-        optunity = OptunityAdapter(config.n_jobs, config.timeout, config.iterations)
+        optunity = OptunityAdapter(config.n_jobs, config.timeout, config.iterations, config.seed)
         stats = optunity.optimize(b)
         benchmark_result.add_result(stats)
         persistence.store_results(benchmark_result, stats)
@@ -125,7 +125,7 @@ def run(persistence: MongoPersistence, b: AbstractBenchmark):
     # BTB
     if config.btb:
         print('Start btb')
-        btb = BtbAdapter(config.n_jobs, config.timeout, config.iterations)
+        btb = BtbAdapter(config.n_jobs, config.timeout, config.iterations, config.seed)
         stats = btb.optimize(b)
         benchmark_result.add_result(stats)
         persistence.store_results(benchmark_result, stats)

@@ -22,8 +22,8 @@ def start_worker(benchmark: AbstractBenchmark, run_id: str, id: int):
 
 class BohbAdapter(BaseAdapter):
 
-    def __init__(self, n_jobs: int, time_limit: float = None, iterations: int = None):
-        super().__init__(n_jobs, time_limit, iterations)
+    def __init__(self, n_jobs: int, time_limit: float = None, iterations: int = None, seed: int = None):
+        super().__init__(n_jobs, time_limit, iterations, seed)
 
     def optimize(self, benchmark: AbstractBenchmark, min_budget: int = 0.1,
                  max_budget: int = 1) -> OptimizationStatistic:

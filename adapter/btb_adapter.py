@@ -17,8 +17,8 @@ from config import BtbConverter
 
 class BtbAdapter(BaseAdapter):
 
-    def __init__(self, n_jobs: int, time_limit: float = None, iterations: int = None):
-        super().__init__(n_jobs, time_limit, iterations)
+    def __init__(self, n_jobs: int, time_limit: float = None, iterations: int = None, seed: int = None):
+        super().__init__(n_jobs, time_limit, iterations, seed)
 
     # noinspection PyMethodOverriding
     def optimize(self, benchmark: AbstractBenchmark) -> OptimizationStatistic:
