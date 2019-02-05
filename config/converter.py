@@ -385,10 +385,10 @@ class SpearmintConverter(BaseConverter):
     def convert(self, config: MetaConfigCollection) -> object:
         d = {}
         for key, conf in config.items():
-            d[key] = self.convert_single(conf, algorithm=key)
+            d[key] = self.convert_single(conf)
         return d
 
-    def convert_single(self, config: MetaConfig, algorithm: str = 'foo') -> object:
+    def convert_single(self, config: MetaConfig) -> object:
         variables = {}
 
         for name, value in config.items():
@@ -414,7 +414,7 @@ class SpearmintConverter(BaseConverter):
                 }
 
         return {
-            'experiment-name': algorithm,
+            'language': 'PYTHON',
             'likelihood': 'NOISELESS',
             'variables': variables
         }
