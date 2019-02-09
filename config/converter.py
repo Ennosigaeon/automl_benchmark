@@ -265,7 +265,7 @@ class RandomSearchConverter(NaiveSearchConverter):
         if value.type == UNI_INT:
             return range(value.lower, value.upper)
         elif value.type == UNI_FLOAT:
-            return scipy.stats.uniform(loc=value.lower, scale=value.upper)
+            return scipy.stats.uniform(loc=value.lower, scale=value.upper - value.lower)
         elif value.type == CATEGORICAL:
             choices_list = []
             for choice in value.choices:

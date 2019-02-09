@@ -167,10 +167,10 @@ class TestConfigSpaceConverter(TestCase):
         return {
             'sklearn.svm.SVC': {
                 'kernel': ['linear', 'rbf', 'poly', 'sigmoid'],
-                'C': SaneEqualityDist(a=0.001, b=1000),
+                'C': SaneEqualityDist(a=0.001, b=999.999),
                 'shrinking': [True, False],
                 'degree': range(1, 5),
-                'gamma': SaneEqualityDist(a=0.0001, b=8),
+                'gamma': SaneEqualityDist(a=0.0001, b=7.9999),
                 'coef0': SaneEqualityDist(a=0.0, b=10)
             }
         }
@@ -274,7 +274,7 @@ class TestConfigSpaceConverter(TestCase):
     def __get_expected_spearmint():
         return {
             'sklearn.svm.SVC': {
-                'experiment-name': 'sklearn.svm.SVC',
+                'language': 'PYTHON',
                 'likelihood': 'NOISELESS',
                 'variables': {
                     'kernel': {
