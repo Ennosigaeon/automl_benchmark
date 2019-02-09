@@ -155,6 +155,8 @@ class OptimizationStatistic:
 
 class BenchmarkResult:
 
+    solvers: List[OptimizationStatistic]
+
     def __init__(self, benchmark: Union[None, AbstractBenchmark], n_jobs: int, seed: int):
         self.benchmark = benchmark
         self.n_jobs = n_jobs

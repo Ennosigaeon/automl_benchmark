@@ -4,12 +4,10 @@ import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 import numpy as np
 
-import benchmark
 from adapter.base import BenchmarkResult
-from evaluation.base import MongoPersistence
 
 
-def plot_evluation_performance(benchmark_result: BenchmarkResult):
+def plot_evaluation_performance(benchmark_result: BenchmarkResult):
     fig, ax = plt.subplots()
     fig.set_size_inches(16, 9)
     fig.set_dpi(250)
@@ -35,7 +33,7 @@ def plot_evluation_performance(benchmark_result: BenchmarkResult):
     # plt.show()
 
 
-def plot_surrogate_performance(ls: List[BenchmarkResult]):
+def plot_incumbent_performance(ls: List[BenchmarkResult]):
     benchmark = ls[0].benchmark
 
     fig, ax = plt.subplots()
@@ -121,18 +119,3 @@ def plot_evaluated_configurations(ls: List[BenchmarkResult]):
     plt.savefig('{}_tested_configurations.pdf'.format(ls[0].name), bbox_inches="tight")
     # fig.show()
     # plt.show()
-
-
-if __name__ == '__main__':
-    persistence = MongoPersistence('10.0.2.2')
-
-    # ls = [benchmark.Levy(), benchmark.Branin(), benchmark.Hartmann6(), benchmark.Rosenbrock10D()]
-    # for b in ls:
-    #     res = persistence.load_all(b)
-    #     plot_surrogate_performance(res)
-
-    # res = persistence.load_single(benchmark.Levy())
-    # plot_results(res)
-
-    res = persistence.load_all(benchmark.Branin())
-    plot_evaluated_configurations(res)
