@@ -1,6 +1,5 @@
 import time
 
-import optunity
 from hpolib.abstract_benchmark import AbstractBenchmark
 from optunity import search_spaces
 from optunity.api import suggest_solver, make_solver, _wrap_hard_box_constraints, optimize

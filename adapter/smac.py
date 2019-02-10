@@ -53,7 +53,7 @@ class SmacAdapter(BaseAdapter):
             raise ValueError('seed is required for smac')
 
     # noinspection PyMethodOverriding
-    def optimize(self, benchmark: AbstractBenchmark):
+    def optimize(self, benchmark: AbstractBenchmark, mean_objective_time: float = 0.1):
         start = time.time()
         statistics = OptimizationStatistic('SMAC', start)
 
@@ -61,7 +61,9 @@ class SmacAdapter(BaseAdapter):
         for i in range(self.n_jobs):
             pool.apply_async(query_objective_function,
                              args=(benchmark, i, self.seed + i, self.time_limit, self.iterations / self.n_jobs),
-                             callback=lambda res: statistics.add_result(self._transform_result(res[0], res[1], start)),
+                             callback=lambda res: statistics.add_result(
+                                 self._transform_result(res[0], res[1], start, mean_objective_time)
+                             ),
                              error_callback=self.log_async_error)
         pool.close()
         pool.join()
@@ -70,12 +72,19 @@ class SmacAdapter(BaseAdapter):
         return statistics
 
     @staticmethod
-    def _transform_result(history: Dict[RunKey, RunValue], best: Configuration, start: float) -> List:
-        # TODO EvaluationResult timestamps are not correct
+    def _transform_result(history: Dict[RunKey, RunValue], best: Configuration,
+                          start: float, mean_objective_time: float) -> List:
+        end = time.time()
+        n = len(history.values())
+
+        # Exact overhead is not known. Mean and standard deviation empirically computed and now faked
+        total = end - start - n * mean_objective_time
+        overhead = np.random.normal(0.02149568831957658, 0.002992145452598064, n)
+        overhead = (overhead / overhead.sum()) * total
+
         res = []
-        offset = 0.025
-        for run_value in history.values():
-            res.append(EvaluationResult(start + offset, start + offset + run_value.time,
-                                        run_value.cost, best.get_dictionary()))
-            offset += run_value.time
+        for i, run_value in enumerate(history.values()):
+            t = start + mean_objective_time * i + np.cumsum(overhead)[i]
+
+            res.append(EvaluationResult(t, t + mean_objective_time, run_value.cost, best.get_dictionary()))
         return res

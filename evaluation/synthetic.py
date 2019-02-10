@@ -78,7 +78,7 @@ def run(persistence: MongoPersistence, b: AbstractBenchmark):
     if config.smac:
         print('Start SMAC')
         smac = SmacAdapter(config.n_jobs, config.timeout, config.iterations, config.seed)
-        stats = smac.optimize(b)
+        stats = smac.optimize(b, objective_time)
         benchmark_result.add_result(stats)
         persistence.store_results(benchmark_result, stats)
         print('Finished after {}s'.format(stats.end - stats.start))

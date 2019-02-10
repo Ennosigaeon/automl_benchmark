@@ -5,7 +5,8 @@ import numpy as np
 import benchmark
 from adapter.base import BenchmarkResult
 from evaluation.base import MongoPersistence
-from evaluation.visualization import plot_incumbent_performance, plot_evaluated_configurations, plot_evaluation_performance
+from evaluation.visualization import plot_incumbent_performance, plot_evaluated_configurations, \
+    plot_evaluation_performance, plot_method_overhead
 
 
 def print_best_incumbent(ls: List[BenchmarkResult], iteration: int = -1):
@@ -29,21 +30,23 @@ def print_best_incumbent(ls: List[BenchmarkResult], iteration: int = -1):
 
 if __name__ == '__main__':
     persistence = MongoPersistence('10.0.2.2')
+    ls = [benchmark.Levy(), benchmark.Branin(), benchmark.Hartmann6(), benchmark.Rosenbrock10D()]
+    bm = benchmark.Levy()
 
     # noinspection PyUnreachableCode
     if True:
-        ls = [benchmark.Levy(), benchmark.Branin(), benchmark.Hartmann6(), benchmark.Rosenbrock10D()]
         for b in ls:
             res = persistence.load_all(b)
             print_best_incumbent(res)
             plot_incumbent_performance(res)
+            plot_method_overhead(res)
 
     # noinspection PyUnreachableCode
     if False:
-        res = persistence.load_single(benchmark.Levy())
+        res = persistence.load_single(bm)
         plot_evaluation_performance(res)
 
     # noinspection PyUnreachableCode
     if False:
-        res = persistence.load_all(benchmark.Branin())
+        res = persistence.load_all(bm)
         plot_evaluated_configurations(res)

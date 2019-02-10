@@ -39,7 +39,6 @@ def plot_incumbent_performance(ls: List[BenchmarkResult]):
     fig, ax = plt.subplots()
     fig.set_size_inches(16, 9)
     fig.set_dpi(250)
-    # fig.tight_layout()
 
     f_opt = benchmark.get_meta_information()['f_opt']
     ax.plot([0, 100], [f_opt, f_opt], 'k', label='Optimum')
@@ -47,10 +46,8 @@ def plot_incumbent_performance(ls: List[BenchmarkResult]):
     solvers = {}
     for res in ls:
         for solver in res.solvers:
-            if solver.algorithm not in solvers:
-                solvers[solver.algorithm] = []
             x, y = solver.as_numpy(incumbent=True, x_axis='iterations')
-            solvers[solver.algorithm].append(y)
+            solvers.setdefault(solver.algorithm, []).append(y)
 
     for name, values in solvers.items():
         y = np.vstack(values)
@@ -119,3 +116,51 @@ def plot_evaluated_configurations(ls: List[BenchmarkResult]):
     plt.savefig('{}_tested_configurations.pdf'.format(ls[0].name), bbox_inches="tight")
     # fig.show()
     # plt.show()
+
+
+def plot_method_overhead(ls: List[BenchmarkResult], line_plot: bool = True):
+    fig, ax = plt.subplots()
+    fig.set_size_inches(16, 9)
+    fig.set_dpi(250)
+
+    solvers = {}
+    for solver in sum([res.solvers for res in ls], []):
+        y = []
+        previous = None
+        for ev in solver.evaluations:
+            if previous is not None:
+                y.append((ev.start - previous) * 1000)
+            previous = ev.end
+        solvers.setdefault(solver.algorithm, []).append(y)
+
+    if line_plot:
+        def smooth(y, box_pts):
+            n = len(y)
+            a = np.hstack((np.tile(y[0], box_pts), y, np.tile(y[-1], box_pts)))
+            box = np.ones(box_pts) / box_pts
+            a_smooth = np.convolve(a, box, mode='same')
+            return a_smooth[box_pts:n+box_pts]
+
+        for name, values in solvers.items():
+            y = np.mean(np.vstack(values), axis=0)[5:]
+            x = np.arange(0, len(y), 1)
+
+            ax.plot(x, smooth(y, 20), label=name)
+
+        ax.legend(loc='upper left')
+        ax.set_xlabel('Iteration')
+    else:
+        labels = []
+        values = []
+        for name, overhead in solvers.items():
+            y = np.vstack(overhead)
+            values.append(np.mean(y, axis=0))
+            labels.append(name)
+
+        ax.boxplot(values, labels=labels, sym='')
+
+    ax.set_title('Solver Overhead')
+    ax.set_ylabel('Overhead in ms')
+
+    plt.savefig('{}_overhead.pdf'.format(ls[0].name), bbox_inches="tight")
+    plt.show()
