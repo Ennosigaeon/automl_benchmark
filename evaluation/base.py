@@ -8,20 +8,27 @@ from adapter.base import OptimizationStatistic, BenchmarkResult
 
 class MongoPersistence:
 
-    def __init__(self, url: str, port: int = 27017):
+    def __init__(self, url: str, port: int = 27017, read_only: bool = False):
         self.client = MongoClient(url, port)
         self.db = self.client.benchmarks
+        self.read_only = read_only
 
     def clear_old_results(self, benchmark: AbstractBenchmark) -> None:
+        if self.read_only:
+            return
         collection = self.db[benchmark.get_meta_information()['name']]
         collection.drop()
 
     def store_new_run(self, res: BenchmarkResult):
+        if self.read_only:
+            return
         collection = self.db[res.benchmark.get_meta_information()['name']]
         d = res.as_dict()
         collection.insert_one(d)
 
     def store_results(self, res: BenchmarkResult, stats: OptimizationStatistic) -> None:
+        if self.read_only:
+            return
         collection = self.db[res.benchmark.get_meta_information()['name']]
 
         # collection.delete_one({'algorithm': stats.algorithm})
