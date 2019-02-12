@@ -40,12 +40,14 @@ class ObjectiveGridSearch(BaseAdapter):
         self.lock = m.Lock()
         self.index = m.Value('i', 0)
 
-    def estimate_grid_size(self, dimensions: int, objective_time: float = None) -> int:
+    def estimate_grid_size(self, dimensions: int = 0, objective_time: float = None) -> int:
         if self.time_limit is not None:
             t = objective_time * OBJECTIVE_TIME_FACTOR + 0.0005
             n = (self.time_limit / t) ** (1 / dimensions)
-        else:
+        elif dimensions != 0:
             n = math.ceil(self.iterations ** (1 / dimensions))
+        else:
+            n = 10
 
         return int(max(1, n))
 
@@ -58,14 +60,22 @@ class ObjectiveGridSearch(BaseAdapter):
 
         # noinspection PyArgumentList
         config_space = benchmark.get_configuration_space(GridSearchConverter(n=grid_size))
-        candidates = ParameterGrid(config_space)
+        candidate_list = []
+        if benchmark.get_meta_information().get('cash', False):
+            for key, value in config_space.items():
+                conf = value.copy()
+                conf['algorithm'] = [key]
+                candidate_list.append(ParameterGrid(conf))
+        else:
+            candidate_list.append(ParameterGrid(config_space))
 
         pool = multiprocessing.Pool(processes=self.n_jobs)
-        for i in range(self.n_jobs):
-            pool.apply_async(query_objective_function,
-                             args=(candidates, benchmark, self.iterations, timeout, self.lock, self.index),
-                             callback=lambda res: statistics.add_result(res),
-                             error_callback=self.log_async_error)
+        for candidates in candidate_list:
+            for i in range(self.n_jobs):
+                pool.apply_async(query_objective_function,
+                                 args=(candidates, benchmark, self.iterations, timeout, self.lock, self.index),
+                                 callback=lambda res: statistics.add_result(res),
+                                 error_callback=self.log_async_error)
 
         pool.close()
         pool.join()

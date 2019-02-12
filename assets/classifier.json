@@ -15,8 +15,6 @@
       "default_value": true
     }
   },
-  "sklearn.naive_bayes.GaussianNB": {
-  },
   "sklearn.naive_bayes.MultinomialNB": {
     "alpha": {
       "type": "uniform_float",
@@ -224,30 +222,15 @@
       "default_value": "svd"
     },
     "shrinkage": {
-      "type": "categorical",
-      "choices": [
-        null,
-        "auto",
-        "manual"
-      ],
-      "default_value": null,
-      "condition": {
-        "parent": "solver",
-        "value": [
-          "lsqr",
-          "eigen"
-        ]
-      }
-    },
-    "shrinkage_factor": {
       "type": "uniform_float",
       "lower": 0.0,
       "upper": 1.0,
       "default_value": 0.5,
       "condition": {
-        "parent": "shrinkage",
+        "parent": "solver",
         "value": [
-          "manual"
+          "lsqr",
+          "eigen"
         ]
       }
     },

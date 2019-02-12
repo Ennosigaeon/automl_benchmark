@@ -2,7 +2,6 @@ import abc
 import math
 from abc import ABC, abstractmethod
 from importlib import import_module
-from typing import Dict
 
 import numpy as np
 import scipy.stats
@@ -38,7 +37,7 @@ class NoopConverter(BaseConverter):
 
 class ConfigSpaceConverter(BaseConverter):
 
-    def convert(self, config: MetaConfigCollection) -> Dict[str, ConfigurationSpace]:
+    def convert(self, config: MetaConfigCollection) -> ConfigurationSpace:
         '''
         Converting input JSON to SMAC ConfigurationSpace
         :param config: JSON file withe configurations
@@ -55,7 +54,15 @@ class ConfigSpaceConverter(BaseConverter):
             component.get_hyperparameter_search_space = lambda dataset_properties=None: estimator_cs
 
             configs[key] = estimator_cs
-        return configs
+
+        cs = ConfigurationSpace()
+        estimator = CategoricalHyperparameter('__choice__', list(configs.keys()), default_value='sklearn.svm.SVC')
+        cs.add_hyperparameter(estimator)
+        for name, search_space in configs.items():
+            parent_hyperparameter = {'parent': estimator, 'value': name}
+            cs.add_configuration_space(name, search_space, parent_hyperparameter=parent_hyperparameter)
+
+        return cs
 
     def convert_single(self, estimator: MetaConfig) -> ConfigurationSpace:
         '''
@@ -155,10 +162,7 @@ class HyperoptConverter(BaseConverter):
     def __get_algo_config(self, config: MetaConfig, algorithm: str, parent: str = None, parent_value: str = None):
         d = {}
         for parameter, value in config.items():
-            if self.as_scope:
-                label = 'custom_{}_{}_{}'.format(algorithm, parent_value if parent_value is not None else '', parameter)
-            else:
-                label = parameter
+            label = 'custom_{}_{}_{}'.format(algorithm, parent_value if parent_value is not None else '', parameter)
 
             if parameter == parent:
                 d[parameter] = parent_value
@@ -179,6 +183,8 @@ class HyperoptConverter(BaseConverter):
         if self.as_scope:
             return scope.generate_sklearn_estimator(algorithm, **d)
         else:
+            if len(algorithm) > 0:
+                d['algorithm'] = algorithm
             return d
 
     @staticmethod
@@ -199,7 +205,7 @@ class BtbConverter(BaseConverter):
         return ls
 
     # noinspection PyMethodOverriding
-    def convert_single(self, config: MetaConfig, name: str = 'foo') -> dict:
+    def convert_single(self, config: MetaConfig, name: str = '') -> dict:
         hyperparamters = {}
         root = []
         conditional = {}
@@ -307,8 +313,13 @@ class GridSearchConverter(NaiveSearchConverter):
 
 
 class RoBoConverter(BaseConverter):
-    def convert(self, config: MetaConfigCollection) -> object:
-        raise NotImplementedError('RoBo is not suited for CASH solving')
+
+    def convert(self, config: MetaConfigCollection):
+        estimators = {}
+        for name, conf in config.items():
+            d = self.convert_single(conf)
+            estimators.update({name: d})
+        return estimators
 
     def convert_single(self, config: MetaConfig) -> object:
         lower = []
@@ -316,18 +327,60 @@ class RoBoConverter(BaseConverter):
         names = []
 
         for name, value in config.items():
-            if value.type == UNI_FLOAT:
+            if value.type == UNI_FLOAT or value.type == UNI_INT:
                 lower.append(value.lower)
                 upper.append(value.upper)
                 names.append(name)
+            elif value.type == CATEGORICAL:
+                lower.append(0)
+                upper.append(len(value.choices) - 1)
+                names.append(name)
             else:
-                raise ValueError('RoBo can only handle floating numbers')
+                raise ValueError('Unknown type {}'.format(value.type))
 
         return np.array(lower), np.array(upper), names
 
 
+class GPyOptConverter(BaseConverter):
+    def convert(self, config: MetaConfigCollection) -> object:
+        raise NotImplementedError('RoBo is not suited for CASH solving')
+
+    def convert_single(self, config: MetaConfig) -> object:
+        ls = []
+        for name, value in config.items():
+            if value.type == UNI_INT:
+                ls.append(
+                    {
+                        'name': name,
+                        'type': 'discrete',
+                        'domain': (value.lower, value.upper)
+                    }
+                )
+            elif value.type == UNI_FLOAT:
+                ls.append(
+                    {
+                        'name': name,
+                        'type': 'continuous',
+                        'domain': (value.lower, value.upper)
+                    }
+                )
+            elif value.type == CATEGORICAL:
+                ls.append(
+                    {
+                        'name': name,
+                        'type': 'continuous',
+                        'domain': (value.lower, value.upper)
+                    }
+                )
+            else:
+                raise ValueError('Unknown type {}'.format(value.type))
+
+        return ls
+
+
 class OptunityConverter(BaseConverter):
     def convert(self, config: MetaConfigCollection) -> object:
+        # TODO generated configuration dict contains empty string key
         d = {}
         for key, conf in config.items():
             d[key] = self.convert_single(conf)
@@ -367,7 +420,7 @@ class OptunityConverter(BaseConverter):
 
             if value.type == UNI_INT:
                 tmp = {}
-                for i in range(value.lower, value.upper):
+                for i in range(value.lower, value.upper + 1):
                     tmp[str(i)] = None
                 d[parameter] = tmp
             elif value.type == UNI_FLOAT:

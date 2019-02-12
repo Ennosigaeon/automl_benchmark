@@ -66,7 +66,7 @@ def run(persistence: MongoPersistence, b: AbstractBenchmark):
     if config.grid_search:
         print('Start grid search')
         gs = ObjectiveGridSearch(config.n_jobs, config.timeout, config.iterations)
-        n = gs.estimate_grid_size(len(b.get_meta_information()['bounds']), objective_time)
+        n = gs.estimate_grid_size(len(b.get_meta_information().get('bounds', [])), objective_time)
         print('Using grid size of {}'.format(n))
         stats = gs.optimize(b, n)
         benchmark_result.add_result(stats)

@@ -1,3 +1,4 @@
+pymongo
 optunity
 smac
 scikit-learn

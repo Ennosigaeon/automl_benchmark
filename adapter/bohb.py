@@ -3,7 +3,7 @@ import time
 
 import hpbandster.core.nameserver as hpns
 from hpbandster.optimizers import BOHB
-from hpbandster.workers.hpolibbenchmark import HPOlib2Worker
+from hpbandster.workers.hpolibbenchmark import Worker
 from hpolib.abstract_benchmark import AbstractBenchmark
 
 from adapter.base import BaseAdapter, OptimizationStatistic, EvaluationResult
@@ -16,7 +16,7 @@ def start_worker(benchmark: AbstractBenchmark, run_id: str, id: int):
     # noinspection PyArgumentList
     conf = benchmark.get_configuration_space(ConfigSpaceConverter())
 
-    w = HPOlib2Worker(benchmark, conf, nameserver=nameserver, run_id=run_id, id=id)
+    w = HPOlib2Worker(benchmark, configspace=conf, nameserver=nameserver, run_id=run_id, id=id, config_as_array=False)
     w.run(background=False)
 
 
@@ -60,3 +60,52 @@ class BohbAdapter(BaseAdapter):
         statistics.stop_optimisation()
 
         return statistics
+
+
+class HPOlib2Worker(Worker):
+    def __init__(self, benchmark, configspace=None, budget_name='budget', budget_preprocessor=None,
+                 measure_test_loss=False, config_as_array=True, **kwargs):
+
+        super().__init__(**kwargs)
+        self.benchmark = benchmark
+
+        if configspace is None:
+            self.configspace = benchmark.get_configuration_space()
+        else:
+            self.configspace = configspace
+
+        self.budget_name = budget_name
+
+        if budget_preprocessor is None:
+            self.budget_preprocessor = lambda b: b
+        else:
+            self.budget_preprocessor = budget_preprocessor
+
+        self.config_as_array = config_as_array
+
+        self.measure_test_loss = measure_test_loss
+
+    def compute(self, config, budget, **kwargs):
+        c = {}
+
+        algorithm = config.get('__choice__', '')
+        if len(algorithm) > 0:
+            n = len(algorithm) + 1
+            c['algorithm'] = algorithm
+        else:
+            n = 0
+
+        for key, value in config.items():
+            if key == '__choice__':
+                continue
+            c[key[n:]] = value
+
+        kwargs = {self.budget_name: self.budget_preprocessor(budget)}
+        res = self.benchmark.objective_function(c, **kwargs)
+        if self.measure_test_loss:
+            del kwargs[self.budget_name]
+            res['test_loss'] = self.benchmark.objective_function_test(c, **kwargs)['function_value']
+        return ({
+            'loss': res['function_value'],
+            'info': res
+        })

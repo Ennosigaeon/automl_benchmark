@@ -1,10 +1,12 @@
 from __future__ import division
 
 import json
+import os
 import time
+from typing import List, Union
 
 import numpy as np
-from atm.method import Method
+from atm.method import Method, HyperPartition
 from btb.selection.selector import Selector
 from btb.tuning import GP, GPEi, Uniform
 from hpolib.abstract_benchmark import AbstractBenchmark
@@ -26,9 +28,17 @@ class BtbAdapter(BaseAdapter):
         statistics = OptimizationStatistic('BTB', start)
 
         # noinspection PyArgumentList,PyTypeChecker
-        method = self._create_method(benchmark.get_configuration_space(BtbConverter()))
+        methods = self._create_method(benchmark.get_configuration_space(BtbConverter()))
 
-        hyperpartitions = method.get_hyperpartitions()
+        hyperpartitions = []
+        for method in methods:
+            if len(method.name) > 0:
+                for hp in method.get_hyperpartitions():
+                    hp.categoricals.append(('algorithm', method.name))
+                    hyperpartitions.append(hp)
+            else:
+                hyperpartitions += method.get_hyperpartitions()
+
         tuners = [FixedGP(hp.tunables, r_minimum=1) for hp in hyperpartitions]
         scores = {idx: tuner.y for idx, tuner in enumerate(tuners)}
 
@@ -38,6 +48,7 @@ class BtbAdapter(BaseAdapter):
             idx = selector.select(scores)
 
             params = tuners[idx].propose()
+            params = self.__get_configuration_dict(hyperpartitions[idx], params)
             res = benchmark.objective_function(params)
             score = -1 * res['function_value']
             tuners[idx].add(params, score)
@@ -52,12 +63,25 @@ class BtbAdapter(BaseAdapter):
         return statistics
 
     @staticmethod
-    def _create_method(conf: dict) -> Method:
-        name = '/tmp/{}'.format(conf['name'])
-        with open(name, 'w') as f:
-            json.dump(conf, f)
+    def __get_configuration_dict(hyperpartition: HyperPartition, tunables: dict) -> dict:
+        tunables.update(dict(hyperpartition.constants))
+        tunables.update(dict(hyperpartition.categoricals))
+        return tunables
 
-        return Method(name)
+    @staticmethod
+    def _create_method(conf: Union[dict, list]) -> List[Method]:
+        if isinstance(conf, dict):
+            conf = [conf]
+
+        ls = []
+        for c in conf:
+            name = '/tmp/{}'.format(time.time())
+            with open(name, 'w') as f:
+                json.dump(c, f)
+            ls.append(Method(name))
+            os.remove(name)
+
+        return ls
 
 
 class FixedGP(GPEi):

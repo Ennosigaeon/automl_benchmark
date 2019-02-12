@@ -1,3 +1,4 @@
+import re
 import time
 
 from hpolib.abstract_benchmark import AbstractBenchmark
@@ -15,8 +16,16 @@ def logged(f):
 
     @wraps(f)
     def wrapped_f(*args, **kwargs):
-        value = f(*args, **kwargs)
-        wrapped_f.call_log.insert(value['function_value'], start=value['start'], end=value['end'], **kwargs)
+        config = {k: v for k, v in kwargs.items() if v is not None and k != ''}
+        for key, value in config.items():
+            if isinstance(value, str):
+                if re.match('^\\d+$', value) is not None:
+                    config[key] = int(value)
+                elif value == 'True' or value == 'False':
+                    config[key] = bool(value)
+
+        value = f(*args, **config)
+        wrapped_f.call_log.insert(value['function_value'], start=value['start'], end=value['end'], **config)
         return value['function_value']
 
     wrapped_f.call_log = CallLog()

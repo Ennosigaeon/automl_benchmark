@@ -20,7 +20,7 @@ def query_objective_function(benchmark: AbstractBenchmark, idx: int, seed: int,
     name = benchmark.get_meta_information()['name']
     random_state = np.random.RandomState(seed)
 
-    d = {
+    scenario = {
         'abort_on_first_run_crash': True,
         'run_obj': 'quality',
         'deterministic': True,
@@ -35,11 +35,26 @@ def query_objective_function(benchmark: AbstractBenchmark, idx: int, seed: int,
     }
 
     if time_limit is not None:
-        d['wallclock_limit'] = time_limit
+        scenario['wallclock_limit'] = time_limit
     else:
-        d['runcount_limit'] = iterations
+        scenario['runcount_limit'] = iterations
 
-    smac = SMAC(scenario=Scenario(d), tae_runner=benchmark, rng=random_state)
+    def objective_function(configuration, **kwargs):
+        d = {}
+        algorithm = configuration._values.get('__choice__', '')
+        if len(algorithm) > 0:
+            n = len(algorithm) + 1
+            d['algorithm'] = algorithm
+        else:
+            n = 0
+
+        for key, value in configuration._values.items():
+            if key == '__choice__':
+                continue
+            d[key[n:]] = value
+        return benchmark(d, **kwargs)
+
+    smac = SMAC(scenario=Scenario(scenario), tae_runner=objective_function, rng=random_state)
     x_star = smac.optimize()
 
     return smac.runhistory.data, x_star
