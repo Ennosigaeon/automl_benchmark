@@ -1,5 +1,6 @@
 from typing import List
 
+from bson.errors import InvalidDocument
 from hpolib.abstract_benchmark import AbstractBenchmark
 from pymongo import MongoClient
 
@@ -34,7 +35,11 @@ class MongoPersistence:
         # collection.delete_one({'algorithm': stats.algorithm})
 
         d = stats.as_dict(include_evaluations=True)
-        collection.update_one({'seed': res.seed}, {'$push': {'solvers': d}})
+        try:
+            collection.update_one({'seed': res.seed}, {'$push': {'solvers': d}})
+        except InvalidDocument as ex:
+            print(d)
+            raise ex
 
     def load_single(self, benchmark: AbstractBenchmark) -> BenchmarkResult:
         collection = self.db[benchmark.get_meta_information()['name']]

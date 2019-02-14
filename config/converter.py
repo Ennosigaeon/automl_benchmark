@@ -296,9 +296,9 @@ class GridSearchConverter(NaiveSearchConverter):
 
             size = abs(value.lower - value.upper)
             if size <= self.n:
-                return np.arange(value.lower, value.upper, 1)
+                return np.arange(value.lower, value.upper, 1, dtype=int)
             else:
-                return np.arange(value.lower, value.upper, math.ceil(size / self.n))
+                return np.arange(value.lower, value.upper, math.ceil(size / self.n), dtype=int)
         elif value.type == UNI_FLOAT:
             if value.lower == value.upper:
                 return [value.lower]

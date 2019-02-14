@@ -28,7 +28,7 @@ def plot_evaluation_performance(benchmark_result: BenchmarkResult):
     ax.set_title(benchmark_result.name)
     ax.set_xlabel('Iteration')
 
-    plt.savefig('{}.pdf'.format(benchmark_result.name), bbox_inches="tight")
+    plt.savefig('plots/{}.pdf'.format(benchmark_result.name), bbox_inches="tight")
     # fig.show()
     # plt.show()
 
@@ -40,14 +40,14 @@ def plot_incumbent_performance(ls: List[BenchmarkResult]):
     fig.set_size_inches(16, 9)
     fig.set_dpi(250)
 
-    f_opt = benchmark.get_meta_information()['f_opt']
-    ax.plot([0, 100], [f_opt, f_opt], 'k', label='Optimum')
-
     solvers = {}
     for res in ls:
         for solver in res.solvers:
             x, y = solver.as_numpy(incumbent=True, x_axis='iterations')
             solvers.setdefault(solver.algorithm, []).append(y)
+
+    f_opt = benchmark.get_meta_information()['f_opt']
+    ax.plot([0, len(next(iter(solvers.values()))[0])], [f_opt, f_opt], 'k', label='Optimum')
 
     for name, values in solvers.items():
         y = np.vstack(values)
@@ -69,7 +69,7 @@ def plot_incumbent_performance(ls: List[BenchmarkResult]):
     ax.set_title(ls[0].name)
     ax.set_xlabel('Iteration')
 
-    plt.savefig('{}_aggregated.pdf'.format(ls[0].name), bbox_inches="tight")
+    plt.savefig('plots/{}_aggregated.pdf'.format(ls[0].name), bbox_inches="tight")
     # fig.show()
     # plt.show()
 
@@ -113,7 +113,7 @@ def plot_evaluated_configurations(ls: List[BenchmarkResult]):
     ax.set_ylabel('$x_1$')
     fig.tight_layout()
 
-    plt.savefig('{}_tested_configurations.pdf'.format(ls[0].name), bbox_inches="tight")
+    plt.savefig('plots/{}_tested_configurations.pdf'.format(ls[0].name), bbox_inches="tight")
     # fig.show()
     # plt.show()
 
@@ -139,7 +139,7 @@ def plot_method_overhead(ls: List[BenchmarkResult], line_plot: bool = True):
             a = np.hstack((np.tile(y[0], box_pts), y, np.tile(y[-1], box_pts)))
             box = np.ones(box_pts) / box_pts
             a_smooth = np.convolve(a, box, mode='same')
-            return a_smooth[box_pts:n+box_pts]
+            return a_smooth[box_pts:n + box_pts]
 
         for name, values in solvers.items():
             y = np.mean(np.vstack(values), axis=0)[5:]
@@ -162,5 +162,5 @@ def plot_method_overhead(ls: List[BenchmarkResult], line_plot: bool = True):
     ax.set_title('Solver Overhead')
     ax.set_ylabel('Overhead in ms')
 
-    plt.savefig('{}_overhead.pdf'.format(ls[0].name), bbox_inches="tight")
+    plt.savefig('plots/{}_overhead.pdf'.format(ls[0].name), bbox_inches="tight")
     plt.show()

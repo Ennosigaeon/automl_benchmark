@@ -43,7 +43,7 @@
     },
     "max_depth": {
       "type": "uniform_float",
-      "lower": 0.0,
+      "lower": 0.1,
       "upper": 2.0,
       "default_value": 0.5
     },

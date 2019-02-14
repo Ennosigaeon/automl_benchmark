@@ -1,6 +1,7 @@
 import math
 import multiprocessing
 import time
+import numpy as np
 
 from hpolib.abstract_benchmark import AbstractBenchmark
 from sklearn.model_selection import ParameterGrid
@@ -23,6 +24,10 @@ def query_objective_function(candidates: ParameterGrid, benchmark: AbstractBench
 
         try:
             config = candidates[i]
+            for key, value in config.items():
+                if isinstance(value, np.int64) or isinstance(value, np.float64):
+                    config[key] = value.item()
+
             # noinspection PyTypeChecker,PyArgumentList
             res = benchmark.objective_function(config)
             ls.append(EvaluationResult.from_dict(res, config))
