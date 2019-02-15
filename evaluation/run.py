@@ -14,7 +14,6 @@ from adapter.optunity_adapter import OptunityAdapter
 from adapter.random_search import ObjectiveRandomSearch
 from adapter.robo import RoBoAdapter
 from adapter.smac import SmacAdapter
-from adapter.spearmint_adapter import SpearmintAdapter
 from evaluation.base import MongoPersistence
 
 logging.basicConfig(level=40)  # 10: debug; 20: info
@@ -38,8 +37,7 @@ def run(persistence: MongoPersistence, b: AbstractBenchmark):
         'bohb': True,
         'robo': True,
         'optunity': True,
-        'btb': True,
-        'spearmint': False
+        'btb': True
     }
     config = Namespace(**config_dict)
 
@@ -131,16 +129,6 @@ def run(persistence: MongoPersistence, b: AbstractBenchmark):
         stats = btb.optimize(b)
         benchmark_result.add_result(stats)
         persistence.store_results(benchmark_result, stats)
-        print('Finished after {}s'.format(stats.end - stats.start))
-        print(stats)
-
-    # Spearmint
-    if config.spearmint:
-        print('Start spearmint')
-        spearmint = SpearmintAdapter(config.n_jobs, config.timeout, config.iterations, config.seed)
-        stats = spearmint.optimize(b)
-        benchmark_result.add_result(stats)
-        # persistence.store_results(benchmark_result, stats)
         print('Finished after {}s'.format(stats.end - stats.start))
         print(stats)
 
