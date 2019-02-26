@@ -43,7 +43,7 @@ class BtbAdapter(BaseAdapter):
         scores = {idx: tuner.y for idx, tuner in enumerate(tuners)}
 
         ls = []
-        selector = Selector(scores.keys())
+        selector = FixedSelector(scores.keys())
         for i in range(self.iterations):
             idx = selector.select(scores)
 
@@ -52,6 +52,7 @@ class BtbAdapter(BaseAdapter):
             res = benchmark.objective_function(params)
             score = -1 * res['function_value']
             tuners[idx].add(params, score)
+            scores[idx] = tuners[idx].y
 
             res['config'] = params
             # print(res)
@@ -126,3 +127,21 @@ class FixedGP(GPEi):
 
         self.gp = GaussianProcessRegressor(normalize_y=True)
         self.gp.fit(X, y)
+
+
+class FixedSelector(Selector):
+
+    def bandit(self, choice_rewards):
+        def non_nan(x):
+            if len(x) == 0:
+                return 1000000
+            else:
+                return np.mean(x)
+
+        # keys = choice_rewards.keys()
+        # values = np.array([non_nan(x) for x in choice_rewards.values()])
+        #
+        # idx = np.random.choice(np.flatnonzero(values == values.max()))
+        # return keys[idx]
+
+        return max(choice_rewards, key=lambda a: non_nan(choice_rewards[a]))
