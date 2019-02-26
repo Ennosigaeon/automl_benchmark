@@ -36,7 +36,9 @@ class Iris(AbstractBenchmark):
         X = iris.data
         y = iris.target
 
-        self.train, self.valid, self.train_targets, self.valid_targets = train_test_split(X, y, test_size=test_size)
+        self.X_train, self.y_train, self.X_test, self.y_test = train_test_split(X, y, test_size=test_size)
+        self.X_train, self.X_valid, self.y_train, self.y_valid = train_test_split(self.X_train, self.y_train,
+                                                                                  test_size=test_size)
 
     def objective_function(self, configuration, dataset_fraction=1, **kwargs):
         start_time = time.time()
@@ -44,16 +46,16 @@ class Iris(AbstractBenchmark):
         rng = kwargs.get("rng", None)
         self.rng = rng_helper.get_rng(rng=rng, self_rng=self.rng)
 
-        shuffle = self.rng.permutation(self.train.shape[0])
-        size = int(dataset_fraction * self.train.shape[0])
+        shuffle = self.rng.permutation(self.X_train.shape[0])
+        size = int(dataset_fraction * self.X_train.shape[0])
 
-        train = self.train[shuffle[:size]]
-        train_targets = self.train_targets[shuffle[:size]]
+        X_train = self.X_train[shuffle[:size]]
+        y_train = self.y_train[shuffle[:size]]
 
         try:
             clf = create_esimator(configuration)
-            clf.fit(train, train_targets)
-            y = 1 - clf.score(self.valid, self.valid_targets)
+            clf.fit(X_train, y_train)
+            y = 1 - clf.score(self.X_valid, self.y_valid)
         except Exception as ex:
             print('Uncaught expection {} for {}'.format(ex, configuration))
             y = 1
@@ -67,13 +69,13 @@ class Iris(AbstractBenchmark):
         rng = kwargs.get("rng", None)
         self.rng = rng_helper.get_rng(rng=rng, self_rng=self.rng)
 
-        train = np.concatenate((self.train, self.valid))
-        train_targets = np.concatenate((self.train_targets, self.valid_targets))
+        X_train = np.concatenate((self.X_train, self.X_valid))
+        y_train = np.concatenate((self.y_train, self.y_valid))
 
         try:
             clf = create_esimator(configuration)
-            clf.fit(train, train_targets)
-            y = 1 - clf.score(self.valid, self.valid_targets)
+            clf.fit(X_train, y_train)
+            y = 1 - clf.score(self.X_test, self.y_test)
         except Exception as ex:
             print('Uncaught expection {} for {}'.format(ex, configuration))
             y = 1

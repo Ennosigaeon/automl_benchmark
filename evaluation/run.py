@@ -137,7 +137,12 @@ def run(persistence: MongoPersistence, b: AbstractBenchmark):
 
 
 if __name__ == '__main__':
-    persistence = MongoPersistence('10.0.2.2')
-    b = benchmark.Levy()
-    for i in range(10):
-        run(persistence, b)
+    persistence = MongoPersistence('10.0.2.2', read_only=True)
+    # b = benchmark.Iris()
+    # for i in range(1):
+    #     run(persistence, b)
+
+    for b in benchmark.OpenML100Suite().load():
+        print('Starting OpenML benchmark {}'.format(b.task_id))
+        for i in range(1):
+            run(persistence, b)
