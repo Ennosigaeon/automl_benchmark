@@ -1,22 +1,17 @@
 import logging
 import time
+import warnings
 from argparse import Namespace
 
 from hpolib.abstract_benchmark import AbstractBenchmark
 
 import benchmark
 from adapter.base import BenchmarkResult
-from adapter.bohb import BohbAdapter
-from adapter.btb_adapter import BtbAdapter
-from adapter.grid_search import ObjectiveGridSearch
-from adapter.hyperopt import HyperoptAdapter
-from adapter.optunity_adapter import OptunityAdapter
-from adapter.random_search import ObjectiveRandomSearch
-from adapter.robo import RoBoAdapter
-from adapter.smac import SmacAdapter
 from evaluation.base import MongoPersistence
 
 logging.basicConfig(level=40)  # 10: debug; 20: info
+
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 def run(persistence: MongoPersistence, b: AbstractBenchmark):
@@ -49,6 +44,7 @@ def run(persistence: MongoPersistence, b: AbstractBenchmark):
     # Random Search
     if config.random_search:
         print('Start random search')
+        from adapter.random_search import ObjectiveRandomSearch
         rs = ObjectiveRandomSearch(config.n_jobs, config.timeout, config.iterations, config.seed)
         stats = rs.optimize(b)
         benchmark_result.add_result(stats)
@@ -63,6 +59,7 @@ def run(persistence: MongoPersistence, b: AbstractBenchmark):
     # Grid Search
     if config.grid_search:
         print('Start grid search')
+        from adapter.grid_search import ObjectiveGridSearch
         gs = ObjectiveGridSearch(config.n_jobs, config.timeout, config.iterations)
         n = gs.estimate_grid_size(len(b.get_meta_information().get('bounds', [])), objective_time)
         print('Using grid size of {}'.format(n))
@@ -75,6 +72,7 @@ def run(persistence: MongoPersistence, b: AbstractBenchmark):
     # SMAC
     if config.smac:
         print('Start SMAC')
+        from adapter.smac import SmacAdapter
         smac = SmacAdapter(config.n_jobs, config.timeout, config.iterations, config.seed)
         stats = smac.optimize(b, objective_time)
         benchmark_result.add_result(stats)
@@ -85,6 +83,7 @@ def run(persistence: MongoPersistence, b: AbstractBenchmark):
     # hyperopt
     if config.hyperopt:
         print('Start hyperopt')
+        from adapter.hyperopt import HyperoptAdapter
         hyperopt = HyperoptAdapter(config.n_jobs, config.timeout, config.iterations, config.seed)
         stats = hyperopt.optimize(b)
         benchmark_result.add_result(stats)
@@ -95,6 +94,7 @@ def run(persistence: MongoPersistence, b: AbstractBenchmark):
     # bohb
     if config.bohb:
         print('Start bohb')
+        from adapter.bohb import BohbAdapter
         bohb = BohbAdapter(config.n_jobs, config.timeout, config.iterations, config.seed)
         stats = bohb.optimize(b)
         benchmark_result.add_result(stats)
@@ -105,6 +105,7 @@ def run(persistence: MongoPersistence, b: AbstractBenchmark):
     # RoBo
     if config.robo:
         print('Start robo')
+        from adapter.robo import RoBoAdapter
         robo = RoBoAdapter(config.n_jobs, config.timeout, config.iterations, config.seed)
         stats = robo.optimize(b, model_type='gp')
         benchmark_result.add_result(stats)
@@ -115,6 +116,7 @@ def run(persistence: MongoPersistence, b: AbstractBenchmark):
     # Optunity
     if config.optunity:
         print('Start optunity')
+        from adapter.optunity_adapter import OptunityAdapter
         optunity = OptunityAdapter(config.n_jobs, config.timeout, config.iterations, config.seed)
         stats = optunity.optimize(b)
         benchmark_result.add_result(stats)
@@ -125,6 +127,7 @@ def run(persistence: MongoPersistence, b: AbstractBenchmark):
     # BTB
     if config.btb:
         print('Start btb')
+        from adapter.btb_adapter import BtbAdapter
         btb = BtbAdapter(config.n_jobs, config.timeout, config.iterations, config.seed)
         stats = btb.optimize(b)
         benchmark_result.add_result(stats)
