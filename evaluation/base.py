@@ -5,7 +5,9 @@ from hpolib.abstract_benchmark import AbstractBenchmark
 from pymongo import MongoClient
 
 from adapter.base import OptimizationStatistic, BenchmarkResult
+import util.logger
 
+logger = util.logger.get()
 
 class MongoPersistence:
 
@@ -38,7 +40,7 @@ class MongoPersistence:
         try:
             collection.update_one({'seed': res.seed}, {'$push': {'solvers': d}})
         except InvalidDocument as ex:
-            print(d)
+            logger.fatal('Invalid document {}'.format(d))
             raise ex
 
     def load_single(self, benchmark: AbstractBenchmark) -> BenchmarkResult:

@@ -6,7 +6,11 @@ from typing import List, Union
 import numpy as np
 from hpolib.abstract_benchmark import AbstractBenchmark
 
+import util.logger
+
 OBJECTIVE_TIME_FACTOR = 1.5
+
+logger = util.logger.get()
 
 
 class EvaluationResult:
@@ -154,7 +158,6 @@ class OptimizationStatistic:
 
 
 class BenchmarkResult:
-
     solvers: List[OptimizationStatistic]
 
     def __init__(self, benchmark: Union[None, AbstractBenchmark], n_jobs: int, seed: int):
@@ -189,7 +192,8 @@ class BaseAdapter(abc.ABC):
 
     @staticmethod
     def log_async_error(ex: Exception):
-        traceback.print_exception(type(ex), ex, None)
+        msg = traceback.format_exception(type(ex), ex, None)
+        logger.error('Encountered error in adapter execution: {}'.format(''.join(msg)))
 
     def __init__(self, n_jobs: int, time_limit: float = None, iterations: int = None,
                  seed: Union[None, int] = None):

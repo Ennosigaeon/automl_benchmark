@@ -7,8 +7,11 @@ from hpolib.abstract_benchmark import AbstractBenchmark
 from sklearn.model_selection import ParameterSampler
 from sklearn.utils import check_random_state
 
+import util.logger
 from adapter.base import OptimizationStatistic, EvaluationResult, BaseAdapter
 from config import RandomSearchConverter
+
+logger = util.logger.get()
 
 
 class CustomParameterSampler(ParameterSampler):
@@ -43,6 +46,8 @@ def run_counted_query(benchmark: AbstractBenchmark, iterations: int, seed: int,
         i = index.value
         index.value += 1
         lock.release()
+
+        logger.debug('Executing run {}'.format(i))
 
         if i >= iterations:
             break

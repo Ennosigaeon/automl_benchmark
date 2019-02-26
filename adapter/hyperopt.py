@@ -4,8 +4,11 @@ import numpy as np
 from hpolib.abstract_benchmark import AbstractBenchmark
 from hyperopt import Trials, fmin, STATUS_FAIL, STATUS_OK, tpe
 
+import util.logger
 from adapter.base import BaseAdapter, OptimizationStatistic, EvaluationResult, OBJECTIVE_TIME_FACTOR
 from config import HyperoptConverter
+
+logger = util.logger.get()
 
 
 class HyperoptAdapter(BaseAdapter):
@@ -19,7 +22,7 @@ class HyperoptAdapter(BaseAdapter):
             if objective_time is None:
                 raise ValueError('Unable to estimate number of iterations without objective time')
             self.iterations = self.estimate_iterations(objective_time)
-            print('Using maximal {} iterations'.format(self.iterations))
+            logger.debug('Using maximal {} iterations'.format(self.iterations))
 
     def estimate_iterations(self, objective_time: float) -> int:
         t = 1 / (objective_time * OBJECTIVE_TIME_FACTOR + 0.04)
@@ -52,7 +55,7 @@ class HyperoptAdapter(BaseAdapter):
                 if res['status_fail'] == 'Timeout reached':
                     break
                 else:
-                    print('Unexpected error: {}'.format(res['status_fail']))
+                    logger.error('Unexpected error: {}'.format(res['status_fail']))
             ls.append(EvaluationResult(res['start'], res['end'], res['loss'], best))
         statistics.add_result(ls)
         statistics.stop_optimisation()

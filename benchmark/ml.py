@@ -7,7 +7,10 @@ from hpolib.util import rng_helper
 from sklearn import datasets
 from sklearn.model_selection import train_test_split
 
+import util.logger
 from config import BaseConverter, NoopConverter, MetaConfigCollection
+
+logger = util.logger.get()
 
 
 def create_esimator(conf: dict):
@@ -23,7 +26,7 @@ def create_esimator(conf: dict):
         class_ = getattr(module, class_name)
         return class_(**kwargs)
     except Exception as ex:
-        print(conf)
+        logger.error('Invalid estimator with config {}'.format(conf))
         raise ex
 
 
@@ -57,7 +60,7 @@ class Iris(AbstractBenchmark):
             clf.fit(X_train, y_train)
             y = 1 - clf.score(self.X_valid, self.y_valid)
         except Exception as ex:
-            print('Uncaught expection {} for {}'.format(ex, configuration))
+            logger.error('Uncaught expection {} for {}'.format(ex, configuration))
             y = 1
 
         c = time.time() - start_time
@@ -77,7 +80,7 @@ class Iris(AbstractBenchmark):
             clf.fit(X_train, y_train)
             y = 1 - clf.score(self.X_test, self.y_test)
         except Exception as ex:
-            print('Uncaught expection {} for {}'.format(ex, configuration))
+            logger.error('Uncaught expection {} for {}'.format(ex, configuration))
             y = 1
 
         c = time.time() - start_time

@@ -8,8 +8,11 @@ import openml
 from hpolib.util import rng_helper
 from sklearn.model_selection import train_test_split
 
+import util.logger
 from benchmark import AbstractBenchmark, create_esimator
 from config import BaseConverter, NoopConverter, MetaConfigCollection
+
+logger = util.logger.get()
 
 
 class OpenMLHoldoutDataManager():
@@ -68,7 +71,8 @@ class OpenMLHoldoutDataManager():
             raise_exception = False
 
         if raise_exception:
-            print('Task %d has more than one repeat. This benchmark can only work with a single repeat.' % task_id)
+            logger.fatal(
+                'Task {} has more than one repeat. This benchmark can only work with a single repeat.'.format(task_id))
 
         train_indices, test_indices = task.get_train_test_split_indices()
 
@@ -119,7 +123,7 @@ class OpenMLBenchmark(AbstractBenchmark):
             clf.fit(X_train, y_train)
             y = 1 - clf.score(self.X_valid, self.y_valid)
         except Exception as ex:
-            print('Uncaught expection {} for {}'.format(ex, configuration))
+            logger.error('Uncaught expection {} for {}'.format(ex, configuration))
             y = 1
 
         c = time.time() - start_time
@@ -139,7 +143,7 @@ class OpenMLBenchmark(AbstractBenchmark):
             clf.fit(X_train, y_train)
             y = 1 - clf.score(self.X_test, self.y_test)
         except Exception as ex:
-            print('Uncaught expection {} for {}'.format(ex, configuration))
+            logger.error('Uncaught expection {} for {}'.format(ex, configuration))
             y = 1
 
         c = time.time() - start_time
@@ -172,7 +176,7 @@ class OpenML100Suite:
         self.save_to = os.path.join('/home/vagrant/', "OpenML")
 
         if not os.path.isdir(self.save_to):
-            print("Create directory {}".format(self.save_to))
+            logger.info("Create directory {}".format(self.save_to))
             os.makedirs(self.save_to)
 
         openml.config.apikey = '610344db6388d9ba34f6db45a3cf71de'
@@ -183,15 +187,17 @@ class OpenML100Suite:
 
         for task_id in benchmark_suite.tasks:
             if task_id in [34536]:
-                print('Skipping broken OpenML benchmark {}'.format(task_id))
+                logger.debug('Skipping broken OpenML benchmark {}'.format(task_id))
             else:
-                print('Loading OpenML benchmark {}'.format(task_id))
+                logger.debug('Loading OpenML benchmark {}'.format(task_id))
                 yield OpenMLBenchmark(task_id)
 
 
 if __name__ == '__main__':
+    util.logger.setup()
+
     suite = OpenML100Suite()
     ls = []
     for benchmark in suite.load():
         ls.append(benchmark)
-    print(len(ls))
+    logger.info(len(ls))
