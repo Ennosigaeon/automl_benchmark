@@ -10,6 +10,7 @@ from sklearn.utils import check_random_state
 import util.logger
 from adapter.base import OptimizationStatistic, EvaluationResult, BaseAdapter
 from config import RandomSearchConverter
+from util.multiprocessor import NoDaemonPool
 
 logger = util.logger.get()
 
@@ -47,10 +48,10 @@ def run_counted_query(benchmark: AbstractBenchmark, iterations: int, seed: int,
         index.value += 1
         lock.release()
 
-        logger.debug('Executing run {}'.format(i))
-
         if i >= iterations:
             break
+
+        logger.debug('Executing run {}'.format(i))
 
         # noinspection PyTypeChecker,PyArgumentList
         cs = benchmark.get_configuration_space(RandomSearchConverter())
@@ -80,7 +81,7 @@ class ObjectiveRandomSearch(BaseAdapter):
         start = time.time()
         statistics = OptimizationStatistic('Random Search', start)
 
-        pool = multiprocessing.Pool(processes=self.n_jobs)
+        pool = NoDaemonPool(processes=self.n_jobs)
         for i in range(self.n_jobs):
             if self.time_limit is not None:
                 timeout = start + self.time_limit

@@ -1,13 +1,14 @@
 import math
 import multiprocessing
 import time
-import numpy as np
 
+import numpy as np
 from hpolib.abstract_benchmark import AbstractBenchmark
 from sklearn.model_selection import ParameterGrid
 
 from adapter.base import OptimizationStatistic, EvaluationResult, BaseAdapter, OBJECTIVE_TIME_FACTOR
 from config import GridSearchConverter
+from util.multiprocessor import NoDaemonPool
 
 
 def query_objective_function(candidates: ParameterGrid, benchmark: AbstractBenchmark, iterations: int, timeout: float,
@@ -74,7 +75,7 @@ class ObjectiveGridSearch(BaseAdapter):
         else:
             candidate_list.append(ParameterGrid(config_space))
 
-        pool = multiprocessing.Pool(processes=self.n_jobs)
+        pool = NoDaemonPool(processes=self.n_jobs)
         for candidates in candidate_list:
             for i in range(self.n_jobs):
                 pool.apply_async(query_objective_function,

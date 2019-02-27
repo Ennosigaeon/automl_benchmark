@@ -1,4 +1,3 @@
-import multiprocessing
 import time
 
 import hpbandster.core.nameserver as hpns
@@ -8,6 +7,7 @@ from hpolib.abstract_benchmark import AbstractBenchmark
 
 from adapter.base import BaseAdapter, OptimizationStatistic, EvaluationResult
 from config import ConfigSpaceConverter
+from util.multiprocessor import NoDaemonPool
 
 nameserver = '127.0.0.1'
 
@@ -37,7 +37,7 @@ class BohbAdapter(BaseAdapter):
         # noinspection PyArgumentList
         conf = benchmark.get_configuration_space(ConfigSpaceConverter())
 
-        pool = multiprocessing.Pool(processes=self.n_jobs)
+        pool = NoDaemonPool(processes=self.n_jobs)
         for i in range(self.n_jobs):
             pool.apply_async(start_worker, args=(benchmark, run_id, i), error_callback=self.log_async_error)
 

@@ -1,4 +1,5 @@
 import logging
+import multiprocessing
 import os
 import time
 from typing import Generator
@@ -109,25 +110,35 @@ class OpenMLBenchmark(AbstractBenchmark):
         self.X_valid = data.X_valid
         self.y_valid = data.y_valid
 
-    def objective_function(self, configuration, **kwargs):
+    def objective_function(self, configuration, timeout: int = 1800, rng=None):
         start_time = time.time()
+        manager = multiprocessing.Manager()
+        score = manager.Value('d', 1.0)
 
-        rng = kwargs.get("rng", None)
         self.rng = rng_helper.get_rng(rng=rng, self_rng=self.rng)
 
         X_train = self.X_train
         y_train = self.y_train
 
-        try:
-            clf = create_esimator(configuration)
-            clf.fit(X_train, y_train)
-            y = 1 - clf.score(self.X_valid, self.y_valid)
-        except Exception as ex:
-            logger.error('Uncaught expection {} for {}'.format(ex, configuration))
-            y = 1
+        p = multiprocessing.Process(target=self._fit_and_score, args=(configuration, X_train, y_train, score))
+        p.start()
+        p.join(timeout)
+
+        if p.is_alive():
+            logger.debug('Abort fitting after timeout')
+            p.terminate()
+            p.join()
 
         c = time.time() - start_time
-        return {'function_value': y, 'cost': c, 'start': start_time, 'end': start_time + c}
+        return {'function_value': score.value, 'cost': c, 'start': start_time, 'end': start_time + c}
+
+    def _fit_and_score(self, configuration, X_train, y_train, score):
+        try:
+            clf = create_esimator(configuration)
+            clf = clf.fit(X_train, y_train)
+            score.value = 1 - clf.score(self.X_valid, self.y_valid)
+        except Exception as ex:
+            logger.error('Uncaught exception {} for {}'.format(ex, configuration))
 
     def objective_function_test(self, configuration, **kwargs):
         start_time = time.time()
