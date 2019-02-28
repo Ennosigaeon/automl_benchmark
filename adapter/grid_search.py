@@ -53,7 +53,7 @@ class ObjectiveGridSearch(BaseAdapter):
         elif dimensions != 0:
             n = math.ceil(self.iterations ** (1 / dimensions))
         else:
-            n = 10
+            n = 5
 
         return int(max(1, n))
 

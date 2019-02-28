@@ -110,7 +110,7 @@ class OpenMLBenchmark(AbstractBenchmark):
         self.X_valid = data.X_valid
         self.y_valid = data.y_valid
 
-    def objective_function(self, configuration, timeout: int = 1800, rng=None):
+    def objective_function(self, configuration, timeout: int = 600, rng=None):
         start_time = time.time()
         manager = multiprocessing.Manager()
         score = manager.Value('d', 1.0)
@@ -198,7 +198,9 @@ class OpenML100Suite:
 
         for task_id in benchmark_suite.tasks:
             if task_id in [34536]:
-                logger.debug('Skipping broken OpenML benchmark {}'.format(task_id))
+                logger.info('Skipping broken OpenML benchmark {}'.format(task_id))
+            elif task_id in [22, 3481, 3573]:
+                logger.info('Skipping long running OpenML benchmark {}'.format(task_id))
             else:
                 logger.debug('Loading OpenML benchmark {}'.format(task_id))
                 yield OpenMLBenchmark(task_id)
