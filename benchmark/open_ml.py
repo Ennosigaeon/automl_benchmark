@@ -24,7 +24,7 @@ class OpenMLHoldoutDataManager():
         self.X_test = None
         self.y_test = None
 
-        self.save_to = os.path.join('~/OpenML')
+        self.save_to = os.path.expanduser('~/OpenML')
         self.task_id = openml_task_id
 
         if rng is None:
@@ -187,7 +187,7 @@ openml.study.functions._multitag_to_list = fix_no_tags
 class OpenML100Suite:
 
     def __init__(self):
-        self.save_to = os.path.join('~/OpenML')
+        self.save_to = os.path.expanduser('~/OpenML')
 
         if not os.path.isdir(self.save_to):
             logger.info('Create directory {}'.format(self.save_to))
