@@ -14,17 +14,18 @@ from util.multiprocessor import NoDaemonPool
 def query_objective_function(candidates: ParameterGrid, benchmark: AbstractBenchmark, iterations: int, timeout: float,
                              lock: multiprocessing.Lock, index: multiprocessing.Value):
     ls = []
+    idx = 0
     while timeout is None or time.time() < timeout:
         lock.acquire()
         i = index.value
         index.value += 1
         lock.release()
 
-        if iterations is not None and i > iterations:
+        if iterations is not None and i >= iterations:
             break
 
         try:
-            config = candidates[i]
+            config = candidates[idx]
             for key, value in config.items():
                 if isinstance(value, np.int64) or isinstance(value, np.float64):
                     config[key] = value.item()
@@ -32,8 +33,12 @@ def query_objective_function(candidates: ParameterGrid, benchmark: AbstractBench
             # noinspection PyTypeChecker,PyArgumentList
             res = benchmark.objective_function(config)
             ls.append(EvaluationResult.from_dict(res, config))
+            idx += 1
         except IndexError:
             # Done
+            lock.acquire()
+            index.value -= 1
+            lock.release()
             break
     return ls
 

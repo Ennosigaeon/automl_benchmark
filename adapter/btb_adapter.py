@@ -49,6 +49,11 @@ class BtbAdapter(BaseAdapter):
 
             params = tuners[idx].propose()
             params = self.__get_configuration_dict(hyperpartitions[idx], params)
+
+            for key, value in params.items():
+                if isinstance(value, np.int64):
+                    params[key] = int(value)
+
             res = benchmark.objective_function(params)
             score = -1 * res['function_value']
             tuners[idx].add(params, score)

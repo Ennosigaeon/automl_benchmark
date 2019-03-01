@@ -1,4 +1,3 @@
-import logging
 import multiprocessing
 import os
 import time
@@ -25,8 +24,7 @@ class OpenMLHoldoutDataManager():
         self.X_test = None
         self.y_test = None
 
-        self.logger = logging.getLogger("DataManager")
-        self.save_to = os.path.join('/home/vagrant/', "OpenML")
+        self.save_to = os.path.join('~/OpenML')
         self.task_id = openml_task_id
 
         if rng is None:
@@ -35,14 +33,14 @@ class OpenMLHoldoutDataManager():
             self.rng = rng
 
         if not os.path.isdir(self.save_to):
-            self.logger.debug("Create directory {}".format(self.save_to))
+            logger.debug('Create directory {}'.format(self.save_to))
             os.makedirs(self.save_to)
 
         openml.config.apikey = '610344db6388d9ba34f6db45a3cf71de'
         openml.config.set_cache_directory(self.save_to)
 
     def load(self, test_size: float = 0.3):
-        """
+        '''
         Loads dataset from OpenML in _config.data_directory.
         Downloads data if necessary.
 
@@ -54,7 +52,7 @@ class OpenMLHoldoutDataManager():
         y_val: np.array
         X_test: np.array
         y_test: np.array
-        """
+        '''
 
         self.X_train, self.X_test, self.y_train, self.y_test, variable_types, name = self._load_data(self.task_id)
         self.X_train, self.X_valid, self.y_train, self.y_valid = train_test_split(self.X_train, self.y_train,
@@ -110,15 +108,20 @@ class OpenMLBenchmark(AbstractBenchmark):
         self.X_valid = data.X_valid
         self.y_valid = data.y_valid
 
-    def objective_function(self, configuration, timeout: int = 600, rng=None):
+    def objective_function(self, configuration, timeout: int = 300, budget=1, seed=None):
         start_time = time.time()
         manager = multiprocessing.Manager()
         score = manager.Value('d', 1.0)
 
-        self.rng = rng_helper.get_rng(rng=rng, self_rng=self.rng)
+        logger.debug('Testing configuration {}'.format(configuration))
 
-        X_train = self.X_train
-        y_train = self.y_train
+        self.rng = rng_helper.get_rng(rng=seed, self_rng=self.rng)
+
+        shuffle = self.rng.permutation(self.X_train.shape[0])
+        size = int(budget * self.X_train.shape[0])
+
+        X_train = self.X_train[shuffle[:size]]
+        y_train = self.y_train[shuffle[:size]]
 
         p = multiprocessing.Process(target=self._fit_and_score, args=(configuration, X_train, y_train, score))
         p.start()
@@ -143,7 +146,7 @@ class OpenMLBenchmark(AbstractBenchmark):
     def objective_function_test(self, configuration, **kwargs):
         start_time = time.time()
 
-        rng = kwargs.get("rng", None)
+        rng = kwargs.get('rng', None)
         self.rng = rng_helper.get_rng(rng=rng, self_rng=self.rng)
 
         X_train = np.concatenate((self.X_valid, self.X_train))
@@ -158,14 +161,14 @@ class OpenMLBenchmark(AbstractBenchmark):
             y = 1
 
         c = time.time() - start_time
-        return {'function_value': y, "cost": c}
+        return {'function_value': y, 'cost': c}
 
     @staticmethod
     def get_configuration_space(converter: BaseConverter = NoopConverter()):
-        return converter.convert(MetaConfigCollection.from_json('../assets/classifier.json'))
+        return converter.convert(MetaConfigCollection.from_json('assets/classifier.json'))
 
     def get_meta_information(self):
-        return {'name': 'OpenML Task {}'.format(self.task_id), 'cash': True}
+        return {'name': 'OpenML_Task_{}'.format(self.task_id), 'cash': True}
 
 
 def fix_no_tags(result_dict, tag):
@@ -184,19 +187,23 @@ openml.study.functions._multitag_to_list = fix_no_tags
 class OpenML100Suite:
 
     def __init__(self):
-        self.save_to = os.path.join('/home/vagrant/', "OpenML")
+        self.save_to = os.path.join('~/OpenML')
 
         if not os.path.isdir(self.save_to):
-            logger.info("Create directory {}".format(self.save_to))
+            logger.info('Create directory {}'.format(self.save_to))
             os.makedirs(self.save_to)
 
         openml.config.apikey = '610344db6388d9ba34f6db45a3cf71de'
         openml.config.set_cache_directory(self.save_to)
 
-    def load(self) -> Generator[OpenMLBenchmark, None, None]:
+    @staticmethod
+    def load(chunk: int = None) -> Generator[OpenMLBenchmark, None, None]:
         benchmark_suite = openml.study.get_study('OpenML100', 'tasks')
 
-        for task_id in benchmark_suite.tasks:
+        for i, task_id in enumerate(benchmark_suite.tasks):
+            if chunk is not None and (i < chunk * 20 or i >= (chunk + 1) * 20):
+                continue
+
             if task_id in [34536]:
                 logger.info('Skipping broken OpenML benchmark {}'.format(task_id))
             elif task_id in [22, 3481, 3573]:

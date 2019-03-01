@@ -21,26 +21,26 @@ def run(persistence: MongoPersistence, b: AbstractBenchmark):
     # db.Branin.count()
 
     config_dict = {
-        'n_jobs': 4,
+        'n_jobs': 1,
         'timeout': None,
-        'iterations': 100,
+        'iterations': 32,
         'seed': int(time.time()),
 
-        'random_search': True,
-        'grid_search': True,
-        'smac': True,
-        'hyperopt': True,
-        'bohb': True,
-        'robo': True,
-        'optunity': True,
-        'btb': True
+        'random_search': False,
+        'grid_search': False,
+        'smac': False,
+        'hyperopt': False,  # Only single threaded
+        'bohb': False,
+        'robo': False,  # Only single threaded
+        'optunity': False,
+        'btb': True  # Only single threaded
     }
     config = Namespace(**config_dict)
 
     benchmark_result = BenchmarkResult(b, config.n_jobs, config.seed)
     persistence.store_new_run(benchmark_result)
 
-    objective_time = None
+    objective_time = 1
 
     # Random Search
     if config.random_search:
@@ -83,7 +83,7 @@ def run(persistence: MongoPersistence, b: AbstractBenchmark):
 
     # hyperopt
     if config.hyperopt:
-        from adapter.hyperopt import HyperoptAdapter
+        from adapter.hyperopt_adapter import HyperoptAdapter
         logger.info('Start hyperopt')
         hyperopt = HyperoptAdapter(config.n_jobs, config.timeout, config.iterations, config.seed)
         stats = hyperopt.optimize(b)
@@ -140,7 +140,7 @@ def run(persistence: MongoPersistence, b: AbstractBenchmark):
 if __name__ == '__main__':
     logger.info('Main start')
     try:
-        persistence = MongoPersistence('10.0.2.2', read_only=True)
+        persistence = MongoPersistence('10.0.2.2', read_only=False)
         # b = benchmark.Iris()
         # for i in range(1):
         #     run(persistence, b)

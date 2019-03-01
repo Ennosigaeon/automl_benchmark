@@ -51,8 +51,6 @@ def run_counted_query(benchmark: AbstractBenchmark, iterations: int, seed: int,
         if i >= iterations:
             break
 
-        logger.debug('Executing run {}'.format(i))
-
         # noinspection PyTypeChecker,PyArgumentList
         cs = benchmark.get_configuration_space(RandomSearchConverter())
         if benchmark.get_meta_information().get('cash', False):
