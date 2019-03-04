@@ -1,7 +1,7 @@
 import logging
 
 
-def setup():
+def setup(id: int = None):
     logging.basicConfig(level=40)  # 10: debug; 20: info
 
     logger = logging.getLogger()
@@ -13,7 +13,11 @@ def setup():
     stream_handler.setFormatter(formatter)
     logger.addHandler(stream_handler)
 
-    file_handler = logging.FileHandler('application.log', mode='w')
+    file = 'application.log'
+    if id is not None:
+        file = 'application-{}.log'.format(id)
+
+    file_handler = logging.FileHandler(file, mode='w')
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
 

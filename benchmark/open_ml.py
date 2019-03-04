@@ -1,3 +1,4 @@
+import math
 import multiprocessing
 import os
 import time
@@ -197,11 +198,12 @@ class OpenML100Suite:
         openml.config.set_cache_directory(self.save_to)
 
     @staticmethod
-    def load(chunk: int = None) -> Generator[OpenMLBenchmark, None, None]:
+    def load(chunk: int = None, total_chunks: int = 8) -> Generator[OpenMLBenchmark, None, None]:
         benchmark_suite = openml.study.get_study('OpenML100', 'tasks')
+        chunk_size = int(math.ceil(len(benchmark_suite.tasks) / total_chunks))
 
         for i, task_id in enumerate(benchmark_suite.tasks):
-            if chunk is not None and (i < chunk * 20 or i >= (chunk + 1) * 20):
+            if chunk is not None and (i < chunk * chunk_size or i >= (chunk + 1) * chunk_size):
                 continue
 
             if task_id in [34536]:

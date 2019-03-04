@@ -1,3 +1,4 @@
+import argparse
 import time
 import warnings
 from argparse import Namespace
@@ -8,11 +9,6 @@ import benchmark
 import util.logger
 from adapter.base import BenchmarkResult
 from evaluation.base import MongoPersistence
-
-util.logger.setup()
-logger = util.logger.get()
-
-warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 def run(persistence: MongoPersistence, b: AbstractBenchmark):
@@ -138,14 +134,24 @@ def run(persistence: MongoPersistence, b: AbstractBenchmark):
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--database', type=str, default='localhost')
+    parser.add_argument('--chunk', type=int, default=None)
+    args = parser.parse_args()
+
+    util.logger.setup(args.chunk)
+    logger = util.logger.get()
+
+    warnings.simplefilter(action='ignore', category=FutureWarning)
+
     logger.info('Main start')
     try:
-        persistence = MongoPersistence('10.0.2.2', read_only=False)
+        persistence = MongoPersistence(args.database, read_only=True)
         # b = benchmark.Iris()
         # for i in range(1):
         #     run(persistence, b)
 
-        for b in benchmark.OpenML100Suite().load():
+        for b in benchmark.OpenML100Suite().load(chunk=args.chunk):
             logger.info('Starting OpenML benchmark {}'.format(b.task_id))
             for i in range(1):
                 run(persistence, b)
