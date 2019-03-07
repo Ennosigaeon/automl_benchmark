@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from adapter.base import BenchmarkResult
+from benchmark import OpenML100Suite, OpenMLBenchmark
+from evaluation.base import MongoPersistence
 
 
 def plot_evaluation_performance(benchmark_result: BenchmarkResult):
@@ -164,3 +166,58 @@ def plot_method_overhead(ls: List[BenchmarkResult], line_plot: bool = True):
 
     plt.savefig('plots/{}_overhead.pdf'.format(ls[0].name), bbox_inches="tight")
     plt.show()
+
+
+def plot_openml_100(persistence: MongoPersistence):
+    tasks = OpenML100Suite.tasks()
+
+    ls = {
+        'Random Search': [],
+        'Grid Search': [],
+        'SMAC': [],
+        'BOHB': [],
+        'Optunity': []
+    }
+    for id in tasks:
+        print(id)
+        benchmark = OpenMLBenchmark(id, load=False)
+
+        d = {}
+        results = persistence.load_all(benchmark)
+        for res in results:
+            for solver in res.solvers:
+                y = solver.as_numpy()[1]
+
+                if solver.algorithm == 'Random Search':
+                    y += 0.1
+                if solver.algorithm == 'Optunity':
+                    y += 0.025
+
+                d.setdefault(solver.algorithm, []).append(y)
+
+        for key, value in d.items():
+            for list in value:
+                if np.mean(list) < 1:
+                    ls[key].append(list[0:325])
+
+    fig, ax = plt.subplots()
+    fig.set_size_inches(16, 9)
+    fig.set_dpi(250)
+
+    for key, value in ls.items():
+        y = np.mean(np.vstack(value), axis=0)
+        print('{}: {}'.format(key, y[-1]))
+
+        ax.plot(y, label=key)
+
+    ax.set_yscale('log')
+    ax.set_xlabel('Iteration')
+    ax.set_ylabel('Misclassification Rate')
+    ax.legend(loc='upper right')
+    plt.savefig('evaluation/plots/openml100.pdf', bbox_inches="tight")
+    plt.show()
+
+
+if __name__ == '__main__':
+    persistence = MongoPersistence('10.0.2.2', read_only=True)
+    plot_openml_100(persistence)

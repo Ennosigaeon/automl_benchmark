@@ -1,9 +1,11 @@
+from datetime import timedelta
 from typing import List
 
 import numpy as np
 
 import benchmark
 from adapter.base import BenchmarkResult
+from benchmark import OpenML100Suite, OpenMLBenchmark
 from evaluation.base import MongoPersistence
 from evaluation.visualization import plot_incumbent_performance, plot_evaluated_configurations, \
     plot_evaluation_performance, plot_method_overhead
@@ -28,13 +30,58 @@ def print_best_incumbent(ls: List[BenchmarkResult], iteration: int = -1):
     print()
 
 
+def print_openml_runtime():
+    tasks = OpenML100Suite.tasks()
+
+    ls = {
+        'Random Search': [],
+        'Grid Search': [],
+        'SMAC': [],
+        'BOHB': [],
+        'Optunity': []
+    }
+    for i, id in enumerate(tasks):
+        print('{}: {}'.format(i, id))
+        benchmark = OpenMLBenchmark(id, load=False)
+
+        d = {}
+        results = persistence.load_all(benchmark)
+        for res in results:
+            for solver in res.solvers:
+                d.setdefault(solver.algorithm, []).append(solver)
+
+        for key, value in d.items():
+            ls[key] += value
+
+    for key, value in ls.items():
+        v = np.array([solver.score for solver in value if solver.score < 1])
+
+        evaluations = []
+        for solver in value:
+            values = [eval.score for eval in solver.evaluations]
+            if min(values) < 1:
+                evaluations += values
+        evaluations = np.array(evaluations)
+
+        runtime = np.array([solver.end - solver.start for solver in value if solver.score < 1]).mean()
+        if key in ['Random Search', 'Grid Search', 'SMAC', 'BOHB', 'Optunity']:
+            runtime *= 8
+
+        delta = timedelta(seconds=runtime.mean())
+
+        print('{}: {:.4f} +- {:.4f}'.format(key, v.mean(), v.std()))
+        print(str(delta))
+        print('{}/{} = {:.4f}'.format(len(evaluations[evaluations == 1]), len(evaluations),
+                                      len(evaluations[evaluations == 1]) / len(evaluations)))
+
+
 if __name__ == '__main__':
     persistence = MongoPersistence('10.0.2.2')
     ls = [benchmark.Levy(), benchmark.Branin(), benchmark.Hartmann6(), benchmark.Rosenbrock10D()]
     bm = benchmark.Levy()
 
     # noinspection PyUnreachableCode
-    if True:
+    if False:
         for b in ls:
             res = persistence.load_all(b)
             print_best_incumbent(res)
@@ -50,3 +97,7 @@ if __name__ == '__main__':
     if False:
         res = persistence.load_all(bm)
         plot_evaluated_configurations(res)
+
+    # noinspection PyUnreachableCode
+    if True:
+        print_openml_runtime()

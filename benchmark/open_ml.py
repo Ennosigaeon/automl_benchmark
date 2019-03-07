@@ -97,17 +97,18 @@ class OpenMLHoldoutDataManager():
 
 class OpenMLBenchmark(AbstractBenchmark):
 
-    def __init__(self, task_id: int, test_size: float = 0.3):
+    def __init__(self, task_id: int, test_size: float = 0.3, load: bool = True):
         super().__init__()
         self.task_id = task_id
 
-        data = OpenMLHoldoutDataManager(task_id).load(test_size)
-        self.X_train = data.X_train
-        self.y_train = data.y_train
-        self.X_test = data.X_test
-        self.y_test = data.y_test
-        self.X_valid = data.X_valid
-        self.y_valid = data.y_valid
+        if load:
+            data = OpenMLHoldoutDataManager(task_id).load(test_size)
+            self.X_train = data.X_train
+            self.y_train = data.y_train
+            self.X_test = data.X_test
+            self.y_test = data.y_test
+            self.X_valid = data.X_valid
+            self.y_valid = data.y_valid
 
     def objective_function(self, configuration, timeout: int = 300, budget=1, seed=None):
         start_time = time.time()
@@ -213,6 +214,11 @@ class OpenML100Suite:
             else:
                 logger.debug('Loading OpenML benchmark {}'.format(task_id))
                 yield OpenMLBenchmark(task_id)
+
+    @staticmethod
+    def tasks():
+        benchmark_suite = openml.study.get_study('OpenML100', 'tasks')
+        return benchmark_suite.tasks
 
 
 if __name__ == '__main__':
