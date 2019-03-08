@@ -20,8 +20,6 @@ class OpenMLHoldoutDataManager():
     def __init__(self, openml_task_id: int, rng=None):
         self.X_train = None
         self.y_train = None
-        self.X_valid = None
-        self.y_valid = None
         self.X_test = None
         self.y_test = None
 
@@ -49,50 +47,21 @@ class OpenMLHoldoutDataManager():
         -------
         X_train: np.array
         y_train: np.array
-        X_val: np.array
-        y_val: np.array
         X_test: np.array
         y_test: np.array
         '''
 
-        self.X_train, self.X_test, self.y_train, self.y_test, variable_types, name = self._load_data(self.task_id)
-        self.X_train, self.X_valid, self.y_train, self.y_valid = train_test_split(self.X_train, self.y_train,
-                                                                                  test_size=test_size)
+        task = openml.tasks.get_task(self.task_id)
 
+        dataset = openml.datasets.get_dataset(dataset_id=task.dataset_id)
+        X, y = dataset.get_data(
+            target=dataset.default_target_attribute,
+            return_attribute_names=False,
+            return_categorical_indicator=False
+        )
+
+        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(X, y, test_size=test_size)
         return self
-
-    def _load_data(self, task_id: int):
-        task = openml.tasks.get_task(task_id)
-
-        try:
-            task.get_train_test_split_indices(fold=0, repeat=1)
-            raise_exception = True
-        except:
-            raise_exception = False
-
-        if raise_exception:
-            logger.fatal(
-                'Task {} has more than one repeat. This benchmark can only work with a single repeat.'.format(task_id))
-
-        train_indices, test_indices = task.get_train_test_split_indices()
-
-        X, y = task.get_X_and_y()
-
-        X_train = X[train_indices]
-        y_train = y[train_indices]
-        X_test = X[test_indices]
-        y_test = y[test_indices]
-
-        # TODO replace by more efficient function which only reads in the data
-        # saved in the arff file describing the attributes/features
-        dataset = task.get_dataset()
-        _, _, categorical_indicator = dataset.get_data(
-            target=task.target_name,
-            return_categorical_indicator=True)
-        variable_types = ['categorical' if ci else 'numerical'
-                          for ci in categorical_indicator]
-
-        return X_train, X_test, y_train, y_test, variable_types, dataset.name
 
 
 class OpenMLBenchmark(AbstractBenchmark):
@@ -107,8 +76,6 @@ class OpenMLBenchmark(AbstractBenchmark):
             self.y_train = data.y_train
             self.X_test = data.X_test
             self.y_test = data.y_test
-            self.X_valid = data.X_valid
-            self.y_valid = data.y_valid
 
     def objective_function(self, configuration, timeout: int = 300, budget=1, seed=None):
         start_time = time.time()
@@ -141,7 +108,7 @@ class OpenMLBenchmark(AbstractBenchmark):
         try:
             clf = create_esimator(configuration)
             clf = clf.fit(X_train, y_train)
-            score.value = 1 - clf.score(self.X_valid, self.y_valid)
+            score.value = 1 - clf.score(self.X_test, self.y_test)
         except Exception as ex:
             logger.error('Uncaught exception {} for {}'.format(ex, configuration))
 
@@ -151,12 +118,9 @@ class OpenMLBenchmark(AbstractBenchmark):
         rng = kwargs.get('rng', None)
         self.rng = rng_helper.get_rng(rng=rng, self_rng=self.rng)
 
-        X_train = np.concatenate((self.X_valid, self.X_train))
-        y_train = np.concatenate((self.y_valid, self.y_train))
-
         try:
             clf = create_esimator(configuration)
-            clf.fit(X_train, y_train)
+            clf.fit(self.X_train, self.y_train)
             y = 1 - clf.score(self.X_test, self.y_test)
         except Exception as ex:
             logger.error('Uncaught expection {} for {}'.format(ex, configuration))

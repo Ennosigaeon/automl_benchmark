@@ -17,19 +17,19 @@ def run(persistence: MongoPersistence, b: AbstractBenchmark):
     # db.Branin.count()
 
     config_dict = {
-        'n_jobs': 1,
+        'n_jobs': 4,
         'timeout': None,
         'iterations': 32,
         'seed': int(time.time()),
 
-        'random_search': False,
+        'random_search': True,
         'grid_search': False,
         'smac': False,
         'hyperopt': False,  # Only single threaded
         'bohb': False,
         'robo': False,  # Only single threaded
         'optunity': False,
-        'btb': True  # Only single threaded
+        'btb': False  # Only single threaded
     }
     config = Namespace(**config_dict)
 
