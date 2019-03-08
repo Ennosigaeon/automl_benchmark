@@ -11,9 +11,9 @@ logger = util.logger.get()
 
 class MongoPersistence:
 
-    def __init__(self, url: str, port: int = 27017, read_only: bool = False):
+    def __init__(self, url: str, port: int = 27017, db='benchmarks', read_only: bool = False):
         self.client = MongoClient(url, port)
-        self.db = self.client.benchmarks
+        self.db = eval('self.client.' + db)
         self.read_only = read_only
 
     def clear_old_results(self, benchmark: AbstractBenchmark) -> None:

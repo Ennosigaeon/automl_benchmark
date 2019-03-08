@@ -38,7 +38,10 @@ def print_openml_runtime():
         'Grid Search': [],
         'SMAC': [],
         'BOHB': [],
-        'Optunity': []
+        'Optunity': [],
+        'hyperopt': [],
+        'RoBo gp': [],
+        'BTB': []
     }
     for i, id in enumerate(tasks):
         print('{}: {}'.format(i, id))
@@ -66,6 +69,8 @@ def print_openml_runtime():
         runtime = np.array([solver.end - solver.start for solver in value if solver.score < 1]).mean()
         if key in ['Random Search', 'Grid Search', 'SMAC', 'BOHB', 'Optunity']:
             runtime *= 8
+        else:
+            runtime *= 4
 
         delta = timedelta(seconds=runtime.mean())
 
@@ -76,7 +81,7 @@ def print_openml_runtime():
 
 
 if __name__ == '__main__':
-    persistence = MongoPersistence('10.0.2.2')
+    persistence = MongoPersistence('10.0.2.2', db='cash')
     ls = [benchmark.Levy(), benchmark.Branin(), benchmark.Hartmann6(), benchmark.Rosenbrock10D()]
     bm = benchmark.Levy()
 

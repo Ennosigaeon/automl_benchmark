@@ -22,14 +22,14 @@ def run(persistence: MongoPersistence, b: AbstractBenchmark):
         'iterations': 325,
         'seed': int(time.time()),
 
-        'random_search': False,
-        'grid_search': False,
-        'smac': False,
+        'random_search': True,
+        'grid_search': True,
+        'smac': True,
         'hyperopt': True,  # Only single threaded
-        'bohb': False,
-        'robo': True,  # Only single threaded
-        'optunity': False,
-        'btb': True  # Only single threaded
+        'bohb': True,
+        'robo': False,  # Only single threaded
+        'optunity': True,
+        'btb': False  # Only single threaded
     }
     config = Namespace(**config_dict)
 
