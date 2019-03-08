@@ -176,7 +176,10 @@ def plot_openml_100(persistence: MongoPersistence):
         'Grid Search': [],
         'SMAC': [],
         'BOHB': [],
-        'Optunity': []
+        'Optunity': [],
+        'hyperopt': [],
+        'RoBo gp': [],
+        'BTB': []
     }
     for id in tasks:
         print(id)
@@ -219,5 +222,5 @@ def plot_openml_100(persistence: MongoPersistence):
 
 
 if __name__ == '__main__':
-    persistence = MongoPersistence('10.0.2.2', read_only=True)
+    persistence = MongoPersistence('10.0.2.2', read_only=True, db='cash')
     plot_openml_100(persistence)

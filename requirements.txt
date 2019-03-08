@@ -1,3 +1,4 @@
+tpot
 auto-sklearn
 configspace
 hpbandster
