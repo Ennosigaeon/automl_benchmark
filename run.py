@@ -17,17 +17,17 @@ def run(persistence: MongoPersistence, b: AbstractBenchmark):
     # db.Branin.count()
 
     config_dict = {
-        'n_jobs': 1,
+        'n_jobs': 8,
         'timeout': None,
-        'iterations': 32,
+        'iterations': 325,
         'seed': int(time.time()),
 
         'random_search': False,
         'grid_search': False,
         'smac': False,
-        'hyperopt': False,  # Only single threaded
+        'hyperopt': True,  # Only single threaded
         'bohb': False,
-        'robo': False,  # Only single threaded
+        'robo': True,  # Only single threaded
         'optunity': False,
         'btb': True  # Only single threaded
     }
@@ -146,7 +146,7 @@ if __name__ == '__main__':
 
     logger.info('Main start')
     try:
-        persistence = MongoPersistence(args.database, read_only=True)
+        persistence = MongoPersistence(args.database, read_only=False)
         # b = benchmark.Iris()
         # for i in range(1):
         #     run(persistence, b)
