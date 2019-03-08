@@ -173,8 +173,6 @@ class OpenML100Suite:
 
             if task_id in [34536]:
                 logger.info('Skipping broken OpenML benchmark {}'.format(task_id))
-            elif task_id in [22, 3481, 3573]:
-                logger.info('Skipping long running OpenML benchmark {}'.format(task_id))
             else:
                 logger.debug('Loading OpenML benchmark {}'.format(task_id))
                 yield OpenMLBenchmark(task_id)
@@ -191,5 +189,6 @@ if __name__ == '__main__':
     suite = OpenML100Suite()
     ls = []
     for benchmark in suite.load():
+        print(len(benchmark.X_test) + len(benchmark.X_train))
         ls.append(benchmark)
     logger.info(len(ls))
