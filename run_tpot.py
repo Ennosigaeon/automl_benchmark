@@ -1,16 +1,15 @@
-import numpy as np
 from tpot import TPOTClassifier
 
 from benchmark import OpenMLBenchmark
 
-timeout = 60
-run_timeout = 30
+timeout = 3600
+run_timeout = 360
 jobs = 4
 
 
 def main(bm: OpenMLBenchmark):
-    X_train = np.concatenate((bm.X_valid, bm.X_train))
-    y_train = np.concatenate((bm.y_valid, bm.y_train))
+    X_train = bm.X_train
+    y_train = bm.y_train
     X_test = bm.X_test
     y_test = bm.y_test
 
@@ -19,7 +18,7 @@ def main(bm: OpenMLBenchmark):
         max_eval_time_mins=run_timeout / 60,
         scoring='accuracy',
         n_jobs=jobs,
-        verbosity=3
+        verbosity=2
     )
     pipeline_optimizer.fit(X_train, y_train)
     print(pipeline_optimizer.fitted_pipeline_)

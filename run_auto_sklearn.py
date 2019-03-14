@@ -1,8 +1,8 @@
 import multiprocessing
 import shutil
+import time
 import warnings
 
-import numpy as np
 import sklearn.datasets
 import sklearn.metrics
 import sklearn.model_selection
@@ -16,10 +16,10 @@ from benchmark import OpenMLBenchmark
 
 timeout = 3600
 run_timeout = 360
-jobs = 8
+jobs = 4
 random = False
 
-ensemble_size = 20
+ensemble_size = 1 if random else 20
 
 
 def get_random_search_object_callback(scenario_dict, seed, ta, backend, metalearning_configurations, runhistory):
@@ -37,12 +37,12 @@ def get_random_search_object_callback(scenario_dict, seed, ta, backend, metalear
     )
 
 
-def get_spawn_classifier(X_train, y_train, tmp_folder, output_folder):
+def get_spawn_classifier(X_train, y_train, tmp_folder, output_folder, seed0):
     def spawn_classifier(seed, dataset_name):
         # Use the initial configurations from meta-learning only in one out of
         # the processes spawned. This prevents auto-sklearn from evaluating the
         # same configurations in all processes.
-        if seed == 0:
+        if seed == seed0 and not random:
             initial_configurations_via_metalearning = 25
             smac_scenario_args = {}
         else:
@@ -80,18 +80,20 @@ def get_spawn_classifier(X_train, y_train, tmp_folder, output_folder):
 def main(bm: OpenMLBenchmark):
     name = bm.get_meta_information()['name']
 
-    X_train = np.concatenate((bm.X_valid, bm.X_train))
-    y_train = np.concatenate((bm.y_valid, bm.y_train))
+    X_train = bm.X_train
+    y_train = bm.y_train
     X_test = bm.X_test
     y_test = bm.y_test
 
     tmp_folder = '/tmp/autosklearn/{}/tmp'.format(name)
     output_folder = '/tmp/autosklearn/{}/out'.format(name)
 
+    seed = int(time.time())
+
     processes = []
-    spawn_classifier = get_spawn_classifier(X_train, y_train, tmp_folder, output_folder)
+    spawn_classifier = get_spawn_classifier(X_train, y_train, tmp_folder, output_folder, seed)
     for i in range(jobs):
-        p = multiprocessing.Process(target=spawn_classifier, args=(i, name))
+        p = multiprocessing.Process(target=spawn_classifier, args=(seed + i, name))
         p.start()
         processes.append(p)
     for p in processes:
@@ -106,25 +108,25 @@ def main(bm: OpenMLBenchmark):
         tmp_folder=tmp_folder,
         output_folder=output_folder,
         initial_configurations_via_metalearning=0,
-        seed=1,
+        seed=seed,
     )
     automl.fit_ensemble(
         y_train,
         task=MULTICLASS_CLASSIFICATION,
         metric=accuracy,
         precision='32',
-        dataset_name='digits',
+        dataset_name=name,
         ensemble_size=ensemble_size
     )
 
     predictions = automl.predict(X_test)
-    print(automl.show_models())
+    # print(automl.show_models())
     print('Misclassification rate', 1 - sklearn.metrics.accuracy_score(y_test, predictions))
 
 
 if __name__ == '__main__':
     try:
-        shutil.rmtree('tmp/autosklearn/')
+        shutil.rmtree('/tmp/autosklearn/')
     except OSError as e:
         pass
 

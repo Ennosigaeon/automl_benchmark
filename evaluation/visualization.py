@@ -194,7 +194,7 @@ def plot_openml_100(persistence: MongoPersistence):
                 if solver.algorithm == 'Random Search':
                     y += 0.1
                 if solver.algorithm == 'Optunity':
-                    y += 0.025
+                    y += 0.05
 
                 d.setdefault(solver.algorithm, []).append(y)
 
@@ -222,5 +222,5 @@ def plot_openml_100(persistence: MongoPersistence):
 
 
 if __name__ == '__main__':
-    persistence = MongoPersistence('10.0.2.2', read_only=True, db='cash')
+    persistence = MongoPersistence('10.0.2.2', read_only=True, db='cashbig')
     plot_openml_100(persistence)
