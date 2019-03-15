@@ -30,7 +30,7 @@ def plot_evaluation_performance(benchmark_result: BenchmarkResult):
     ax.set_title(benchmark_result.name)
     ax.set_xlabel('Iteration')
 
-    plt.savefig('plots/{}.pdf'.format(benchmark_result.name), bbox_inches="tight")
+    plt.savefig('evaluation/plots/{}.pdf'.format(benchmark_result.name), bbox_inches="tight")
     # fig.show()
     # plt.show()
 
@@ -71,7 +71,7 @@ def plot_incumbent_performance(ls: List[BenchmarkResult]):
     ax.set_title(ls[0].name)
     ax.set_xlabel('Iteration')
 
-    plt.savefig('plots/{}_aggregated.pdf'.format(ls[0].name), bbox_inches="tight")
+    plt.savefig('evaluation/plots/{}_aggregated.pdf'.format(ls[0].name), bbox_inches="tight")
     # fig.show()
     # plt.show()
 
@@ -115,7 +115,7 @@ def plot_evaluated_configurations(ls: List[BenchmarkResult]):
     ax.set_ylabel('$x_1$')
     fig.tight_layout()
 
-    plt.savefig('plots/{}_tested_configurations.pdf'.format(ls[0].name), bbox_inches="tight")
+    plt.savefig('evaluation/plots/{}_tested_configurations.pdf'.format(ls[0].name), bbox_inches="tight")
     # fig.show()
     # plt.show()
 
@@ -164,7 +164,7 @@ def plot_method_overhead(ls: List[BenchmarkResult], line_plot: bool = True):
     ax.set_title('Solver Overhead')
     ax.set_ylabel('Overhead in ms')
 
-    plt.savefig('plots/{}_overhead.pdf'.format(ls[0].name), bbox_inches="tight")
+    plt.savefig('evaluation/plots/{}_overhead.pdf'.format(ls[0].name), bbox_inches="tight")
     plt.show()
 
 
@@ -204,7 +204,7 @@ def plot_openml_100(persistence: MongoPersistence):
                     ls[key].append(list[0:325])
 
     fig, ax = plt.subplots()
-    fig.set_size_inches(16, 9)
+    fig.set_size_inches(20, 8)
     fig.set_dpi(250)
 
     for key, value in ls.items():

@@ -81,12 +81,12 @@ def print_openml_runtime():
 
 
 if __name__ == '__main__':
-    persistence = MongoPersistence('10.0.2.2', db='cash')
+    persistence = MongoPersistence('10.0.2.2', db='synthetic')
     ls = [benchmark.Levy(), benchmark.Branin(), benchmark.Hartmann6(), benchmark.Rosenbrock10D()]
     bm = benchmark.Levy()
 
     # noinspection PyUnreachableCode
-    if False:
+    if True:
         for b in ls:
             res = persistence.load_all(b)
             print_best_incumbent(res)
@@ -104,5 +104,5 @@ if __name__ == '__main__':
         plot_evaluated_configurations(res)
 
     # noinspection PyUnreachableCode
-    if True:
+    if False:
         print_openml_runtime()
