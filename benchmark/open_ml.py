@@ -22,6 +22,7 @@ class OpenMLHoldoutDataManager():
         self.y_train = None
         self.X_test = None
         self.y_test = None
+        self.names = None
 
         self.save_to = os.path.expanduser('~/OpenML')
         self.task_id = openml_task_id
@@ -38,7 +39,7 @@ class OpenMLHoldoutDataManager():
         openml.config.apikey = '610344db6388d9ba34f6db45a3cf71de'
         openml.config.set_cache_directory(self.save_to)
 
-    def load(self, test_size: float = 0.3):
+    def load(self, test_size: float = 0.3) -> 'OpenMLHoldoutDataManager':
         '''
         Loads dataset from OpenML in _config.data_directory.
         Downloads data if necessary.
@@ -54,9 +55,9 @@ class OpenMLHoldoutDataManager():
         task = openml.tasks.get_task(self.task_id)
 
         dataset = openml.datasets.get_dataset(dataset_id=task.dataset_id)
-        X, y = dataset.get_data(
+        X, y, self.names = dataset.get_data(
             target=dataset.default_target_attribute,
-            return_attribute_names=False,
+            return_attribute_names=True,
             return_categorical_indicator=False
         )
 
@@ -76,6 +77,7 @@ class OpenMLBenchmark(AbstractBenchmark):
             self.y_train = data.y_train
             self.X_test = data.X_test
             self.y_test = data.y_test
+            self.column_names = data.names
 
     def objective_function(self, configuration, timeout: int = 300, budget=1, seed=None):
         start_time = time.time()
