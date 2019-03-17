@@ -3,6 +3,7 @@ from typing import List
 import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib import cm
 
 from adapter.base import BenchmarkResult
 from benchmark import OpenML100Suite, OpenMLBenchmark
@@ -30,7 +31,7 @@ def plot_evaluation_performance(benchmark_result: BenchmarkResult):
     ax.set_title(benchmark_result.name)
     ax.set_xlabel('Iteration')
 
-    plt.savefig('evaluation/plots/{}.pdf'.format(benchmark_result.name), bbox_inches="tight")
+    plt.savefig('evaluation/plots/{}.pdf'.format(benchmark_result.name), bbox_inches='tight')
     # fig.show()
     # plt.show()
 
@@ -71,7 +72,7 @@ def plot_incumbent_performance(ls: List[BenchmarkResult]):
     ax.set_title(ls[0].name)
     ax.set_xlabel('Iteration')
 
-    plt.savefig('evaluation/plots/{}_aggregated.pdf'.format(ls[0].name), bbox_inches="tight")
+    plt.savefig('evaluation/plots/{}_aggregated.pdf'.format(ls[0].name), bbox_inches='tight')
     # fig.show()
     # plt.show()
 
@@ -115,7 +116,7 @@ def plot_evaluated_configurations(ls: List[BenchmarkResult]):
     ax.set_ylabel('$x_1$')
     fig.tight_layout()
 
-    plt.savefig('evaluation/plots/{}_tested_configurations.pdf'.format(ls[0].name), bbox_inches="tight")
+    plt.savefig('evaluation/plots/{}_tested_configurations.pdf'.format(ls[0].name), bbox_inches='tight')
     # fig.show()
     # plt.show()
 
@@ -164,7 +165,7 @@ def plot_method_overhead(ls: List[BenchmarkResult], line_plot: bool = True):
     ax.set_title('Solver Overhead')
     ax.set_ylabel('Overhead in ms')
 
-    plt.savefig('evaluation/plots/{}_overhead.pdf'.format(ls[0].name), bbox_inches="tight")
+    plt.savefig('evaluation/plots/{}_overhead.pdf'.format(ls[0].name), bbox_inches='tight')
     plt.show()
 
 
@@ -217,10 +218,50 @@ def plot_openml_100(persistence: MongoPersistence):
     ax.set_xlabel('Iteration')
     ax.set_ylabel('Misclassification Rate')
     ax.legend(loc='upper right')
-    plt.savefig('evaluation/plots/openml100.pdf', bbox_inches="tight")
+    plt.savefig('evaluation/plots/openml100.pdf', bbox_inches='tight')
+    plt.show()
+
+
+def plot_branin():
+    from mpl_toolkits.mplot3d import Axes3D
+
+    # noinspection PyStatementEffect
+    Axes3D.name
+
+    fig = plt.figure()
+    fig.set_size_inches(10, 8)
+    fig.set_dpi(250)
+    ax = fig.gca(projection='3d')
+
+    # Make data.
+    X = np.arange(0, 15, 0.05)
+    Y = np.arange(-5, 10, 0.05)
+    X, Y = np.meshgrid(X, Y)
+
+    Z = (Y - (5.1 / (4 * np.pi ** 2)) * X ** 2 + 5 * X / np.pi - 6) ** 2
+    Z += 10 * (1 - 1 / (8 * np.pi)) * np.cos(X) + 10
+
+    ax.plot_surface(X, Y, Z, cmap=cm.coolwarm, linewidth=0.01, edgecolors='k', antialiased=True)
+
+    ax.view_init(30, 120)
+    ax.set_xticks([0, 5, 10, 15])
+    ax.set_yticks([-5, 0, 5, 10])
+
+    ax.xaxis.set_rotate_label(False)
+    ax.yaxis.set_rotate_label(False)
+    ax.zaxis.set_rotate_label(False)
+
+    ax.set_xlabel('$x_0$', rotation=0)
+    ax.set_ylabel('$x_1$', rotation=0)
+    ax.set_zlabel('f$(x_0,\, x_1)$', rotation=90)
+    ax.set_title('Branin Function')
+
+    plt.savefig('evaluation/plots/branin.pdf', bbox_inches='tight')
+    fig.show()
     plt.show()
 
 
 if __name__ == '__main__':
-    persistence = MongoPersistence('10.0.2.2', read_only=True, db='cashbig')
+    persistence = MongoPersistence('10.0.2.2', read_only=True, db='cash_big')
     plot_openml_100(persistence)
+    # plot_branin()
