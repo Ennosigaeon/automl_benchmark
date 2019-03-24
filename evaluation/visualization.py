@@ -50,15 +50,15 @@ def plot_incumbent_performance(ls: List[BenchmarkResult]):
             solvers.setdefault(solver.algorithm, []).append(y)
 
     f_opt = benchmark.get_meta_information()['f_opt']
-    ax.plot([0, len(next(iter(solvers.values()))[0])], [f_opt, f_opt], 'k', label='Optimum')
+    ax.plot([1, len(next(iter(solvers.values()))[0]) + 1], [f_opt, f_opt], 'k', label='Optimum')
 
     for name, values in solvers.items():
         y = np.vstack(values)
-        mean = np.mean(y, axis=0)
-        std = np.std(y, axis=0)
+        mean = np.mean(y, axis=0)[:250]
+        std = np.std(y, axis=0)[:250]
 
-        ax.fill_between(np.arange(0, y.shape[1], 1), mean - std, mean + std, alpha=0.25)
-        ax.plot(mean, label=name)
+        ax.fill_between(np.arange(1, 251, 1), mean - std, mean + std, alpha=0.25)
+        ax.plot(np.arange(1, 251, 1), mean, label=name)
 
     # Fixes for skewed plots
     if ls[0].name == 'Branin':
@@ -134,7 +134,7 @@ def plot_method_overhead(ls: List[BenchmarkResult], line_plot: bool = True):
             if previous is not None:
                 y.append((ev.start - previous) * 1000)
             previous = ev.end
-        solvers.setdefault(solver.algorithm, []).append(y)
+        solvers.setdefault(solver.algorithm, []).append(y[:244])
 
     if line_plot:
         def smooth(y, box_pts):
@@ -146,7 +146,7 @@ def plot_method_overhead(ls: List[BenchmarkResult], line_plot: bool = True):
 
         for name, values in solvers.items():
             y = np.mean(np.vstack(values), axis=0)[5:]
-            x = np.arange(0, len(y), 1)
+            x = np.arange(1, len(y) + 1, 1)
 
             ax.plot(x, smooth(y, 20), label=name)
 
@@ -212,9 +212,10 @@ def plot_openml_100(persistence: MongoPersistence):
         y = np.mean(np.vstack(value), axis=0)
         print('{}: {}'.format(key, y[-1]))
 
-        ax.plot(y, label=key)
+        ax.plot(np.arange(1, len(y) + 1, 1), y, label=key)
 
-    ax.set_yscale('log')
+    # ax.set_yscale('log')
+    ax.set_xscale('log')
     ax.set_xlabel('Iteration')
     ax.set_ylabel('Misclassification Rate')
     ax.legend(loc='upper right')
