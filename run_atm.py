@@ -55,7 +55,8 @@ if __name__ == '__main__':
     print('Timeout: ', timeout)
     print('Run Timeout: ', run_timeout)
 
-    task_ids = [22, 37, 2079, 3543, 3899, 3913, 3917, 9950, 9980, 14966]
+    # task_ids = [22, 37, 2079, 3543, 3899, 3913, 3917, 9950, 9980, 14966]
+    task_ids = [15, 23, 2079, 3021, 3560, 3561, 3946, 9955, 9985, 14969]
     for task in task_ids:
         print('Starting task {}'.format(task))
         bm = OpenMLBenchmark(task)
