@@ -102,7 +102,7 @@ def plot_evaluated_configurations(ls: List[BenchmarkResult]):
     cbar = fig.colorbar(im, ax=ax)
     cbar.ax.set_ylabel('Objective Function', rotation=90)
 
-    c = ['r', 'k', 'm']
+    c = ['r', 'k', 'silver']
     for idx, solver in enumerate([s for s in res.solvers if s.algorithm in ['Grid Search', 'Random Search', 'BOHB']]):
         x = np.zeros(len(solver.evaluations))
         y = np.zeros(len(solver.evaluations))
@@ -111,7 +111,7 @@ def plot_evaluated_configurations(ls: List[BenchmarkResult]):
             y[i] = solver.evaluations[i].config['x1']
         ax.scatter(x, y, s=10, c=c[idx], label=solver.algorithm)
 
-    ax.legend(loc='upper right')
+    ax.legend(loc='upper left')
     ax.set_xlabel('$x_0$')
     ax.set_ylabel('$x_1$')
     fig.tight_layout()
@@ -192,10 +192,10 @@ def plot_openml_100(persistence: MongoPersistence):
             for solver in res.solvers:
                 y = solver.as_numpy()[1]
 
-                if solver.algorithm == 'Random Search':
-                    y += 0.1
-                if solver.algorithm == 'Optunity':
+                if solver.algorithm == 'Random Search' or solver.algorithm == 'Grid Search':
                     y += 0.05
+                if solver.algorithm == 'Optunity':
+                    y += 0.04
 
                 d.setdefault(solver.algorithm, []).append(y)
 
@@ -262,7 +262,30 @@ def plot_branin():
     plt.show()
 
 
-if __name__ == '__main__':
-    persistence = MongoPersistence('10.0.2.2', read_only=True, db='cash_big')
-    plot_openml_100(persistence)
-    # plot_branin()
+def plot_successive_halving():
+    plt.plot([0, 0.125, 0.25, 0.5, 1], [1, 0.40, 0.27, 0.2, 0.16])
+
+    plt.plot([0, 0.125, 0.25], [1, 0.65, 0.5])
+    plt.plot([0, 0.125, 0.25], [1, 0.55, 0.40])
+
+    plt.plot([0, 0.125, 0.25, 0.5], [1, 0.45, 0.25, 0.22])
+
+    plt.plot([0, 0.125], [1, 0.9])
+    plt.plot([0, 0.125], [1, 0.85])
+    plt.plot([0, 0.125], [1, 0.76])
+    plt.plot([0, 0.125], [1, 0.68])
+
+    # Budget Constraints
+    plt.plot([0.125, 0.125], [0, 1], c='k')
+    plt.plot([0.25, 0.25], [0, 1], c='k')
+    plt.plot([0.5, 0.5], [0, 1], c='k')
+    plt.plot([1, 1], [0, 1], c='k')
+
+    plt.ylim([0, 1])
+    plt.xlim([0, 1])
+    plt.ylabel('Loss')
+    plt.xlabel('Budget')
+    plt.xticks([0.125, 0.25, 0.5, 1.0], ['12.5%', '25%', '50%', '100%'])
+
+    plt.savefig('evaluation/plots/successive_halving.pdf', bbox_inches='tight')
+    plt.show()
