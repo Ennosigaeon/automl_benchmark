@@ -33,19 +33,20 @@ def main(bm: OpenMLBenchmark):
 
 
 if __name__ == '__main__':
-    print('Max Evals: ', max_evals)
-    print('Run Timeout: ', run_timeout)
+    for i in range(8):
+        print('#######\nIteration {}\n#######'.format(i))
+        print('Max Evals: ', max_evals)
+        print('Run Timeout: ', run_timeout)
 
-    # task_ids = [22, 37, 2079, 3543, 3899, 3913, 3917, 9950, 9980]
-    task_ids = [15, 23, 2079, 3021, 3560, 3561, 3946, 9955, 9985, 14969]
-    for task in task_ids:
-        print('Starting task {}'.format(task))
-        bm = OpenMLBenchmark(task)
+        task_ids = [15, 23, 29, 3021, 41, 2079, 3560, 3561, 3904, 3946, 9955, 9985, 7592, 14969, 146606]
+        for task in [146606]:
+            print('Starting task {}'.format(task))
+            bm = OpenMLBenchmark(task)
 
-        try:
-            main(bm)
-        except Exception as e:
-            if isinstance(e, KeyboardInterrupt):
-                raise e
-            print(e)
+            try:
+                main(bm)
+            except Exception as e:
+                if isinstance(e, KeyboardInterrupt):
+                    raise e
+                print(e)
 

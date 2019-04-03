@@ -46,19 +46,21 @@ def main(bm: OpenMLBenchmark):
 
 
 if __name__ == '__main__':
-    try:
-        shutil.rmtree('/tmp/atm/')
-    except OSError as e:
-        pass
-    os.mkdir('/tmp/atm/')
+    for i in range(4):
+        print('#######\nIteration {}\n#######'.format(i))
 
-    print('Timeout: ', timeout)
-    print('Run Timeout: ', run_timeout)
+        try:
+            shutil.rmtree('/tmp/atm/')
+        except OSError as e:
+            pass
+        os.mkdir('/tmp/atm/')
 
-    # task_ids = [22, 37, 2079, 3543, 3899, 3913, 3917, 9950, 9980, 14966]
-    task_ids = [15, 23, 2079, 3021, 3560, 3561, 3946, 9955, 9985, 14969]
-    for task in task_ids:
-        print('Starting task {}'.format(task))
-        bm = OpenMLBenchmark(task)
+        print('Timeout: ', timeout)
+        print('Run Timeout: ', run_timeout)
 
-        main(bm)
+        task_ids = [15, 23, 29, 3021, 41, 2079, 3560, 3561, 3904, 3946, 9955, 9985, 7592, 14969, 146606]
+        for task in task_ids:
+            print('Starting task {}'.format(task))
+            bm = OpenMLBenchmark(task)
+
+            main(bm)

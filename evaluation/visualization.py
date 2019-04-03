@@ -166,7 +166,6 @@ def plot_method_overhead(ls: List[BenchmarkResult], line_plot: bool = True):
     ax.set_ylabel('Overhead in ms')
 
     plt.savefig('evaluation/plots/{}_overhead.pdf'.format(ls[0].name), bbox_inches='tight')
-    plt.show()
 
 
 def plot_openml_100(persistence: MongoPersistence):
@@ -220,7 +219,6 @@ def plot_openml_100(persistence: MongoPersistence):
     ax.set_ylabel('Misclassification Rate')
     ax.legend(loc='upper right')
     plt.savefig('evaluation/plots/openml100.pdf', bbox_inches='tight')
-    plt.show()
 
 
 def plot_branin():
@@ -258,8 +256,6 @@ def plot_branin():
     ax.set_title('Branin Function')
 
     plt.savefig('evaluation/plots/branin.pdf', bbox_inches='tight')
-    fig.show()
-    plt.show()
 
 
 def plot_successive_halving():
@@ -288,4 +284,3 @@ def plot_successive_halving():
     plt.xticks([0.125, 0.25, 0.5, 1.0], ['12.5%', '25%', '50%', '100%'])
 
     plt.savefig('evaluation/plots/successive_halving.pdf', bbox_inches='tight')
-    plt.show()

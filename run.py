@@ -17,19 +17,19 @@ def run(persistence: MongoPersistence, b: AbstractBenchmark):
     # db.Branin.count()
 
     config_dict = {
-        'n_jobs': 4,
+        'n_jobs': 1,
         'timeout': None,
-        'iterations': 32,
+        'iterations': 250,
         'seed': int(time.time()),
 
         'random_search': True,
-        'grid_search': False,
-        'smac': False,
-        'hyperopt': False,  # Only single threaded
-        'bohb': False,
-        'robo': False,  # Only single threaded
-        'optunity': False,
-        'btb': False  # Only single threaded
+        'grid_search': True,
+        'smac': True,
+        'hyperopt': True,  # Only single threaded
+        'bohb': True,
+        'robo': True,  # Only single threaded
+        'optunity': True,
+        'btb': True  # Only single threaded
     }
     config = Namespace(**config_dict)
 
@@ -146,15 +146,15 @@ if __name__ == '__main__':
 
     logger.info('Main start')
     try:
-        persistence = MongoPersistence(args.database, read_only=True)
-        # b = benchmark.Iris()
-        # for i in range(1):
-        #     run(persistence, b)
+        persistence = MongoPersistence(args.database, read_only=False)
+        b = benchmark.Camelback()
+        for i in range(10):
+            run(persistence, b)
 
-        for b in benchmark.OpenML100Suite().load(chunk=args.chunk):
-            logger.info('Starting OpenML benchmark {}'.format(b.task_id))
-            for i in range(1):
-                run(persistence, b)
+        # for b in benchmark.OpenML100Suite().load(chunk=args.chunk):
+        #     logger.info('Starting OpenML benchmark {}'.format(b.task_id))
+        #     for i in range(1):
+        #         run(persistence, b)
     except (SystemExit, KeyboardInterrupt, Exception) as e:
         logger.error(e, exc_info=True)
 
