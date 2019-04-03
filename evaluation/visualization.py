@@ -3,6 +3,7 @@ from typing import List
 import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib import cm
 
 from adapter.base import BenchmarkResult
 from benchmark import OpenML100Suite, OpenMLBenchmark
@@ -30,7 +31,7 @@ def plot_evaluation_performance(benchmark_result: BenchmarkResult):
     ax.set_title(benchmark_result.name)
     ax.set_xlabel('Iteration')
 
-    plt.savefig('plots/{}.pdf'.format(benchmark_result.name), bbox_inches="tight")
+    plt.savefig('evaluation/plots/{}.pdf'.format(benchmark_result.name), bbox_inches='tight')
     # fig.show()
     # plt.show()
 
@@ -49,15 +50,15 @@ def plot_incumbent_performance(ls: List[BenchmarkResult]):
             solvers.setdefault(solver.algorithm, []).append(y)
 
     f_opt = benchmark.get_meta_information()['f_opt']
-    ax.plot([0, len(next(iter(solvers.values()))[0])], [f_opt, f_opt], 'k', label='Optimum')
+    ax.plot([1, len(next(iter(solvers.values()))[0]) + 1], [f_opt, f_opt], 'k', label='Optimum')
 
     for name, values in solvers.items():
         y = np.vstack(values)
-        mean = np.mean(y, axis=0)
-        std = np.std(y, axis=0)
+        mean = np.mean(y, axis=0)[:250]
+        std = np.std(y, axis=0)[:250]
 
-        ax.fill_between(np.arange(0, y.shape[1], 1), mean - std, mean + std, alpha=0.25)
-        ax.plot(mean, label=name)
+        ax.fill_between(np.arange(1, 251, 1), mean - std, mean + std, alpha=0.25)
+        ax.plot(np.arange(1, 251, 1), mean, label=name)
 
     # Fixes for skewed plots
     if ls[0].name == 'Branin':
@@ -71,7 +72,7 @@ def plot_incumbent_performance(ls: List[BenchmarkResult]):
     ax.set_title(ls[0].name)
     ax.set_xlabel('Iteration')
 
-    plt.savefig('plots/{}_aggregated.pdf'.format(ls[0].name), bbox_inches="tight")
+    plt.savefig('evaluation/plots/{}_aggregated.pdf'.format(ls[0].name), bbox_inches='tight')
     # fig.show()
     # plt.show()
 
@@ -101,7 +102,7 @@ def plot_evaluated_configurations(ls: List[BenchmarkResult]):
     cbar = fig.colorbar(im, ax=ax)
     cbar.ax.set_ylabel('Objective Function', rotation=90)
 
-    c = ['r', 'k', 'm']
+    c = ['r', 'k', 'silver']
     for idx, solver in enumerate([s for s in res.solvers if s.algorithm in ['Grid Search', 'Random Search', 'BOHB']]):
         x = np.zeros(len(solver.evaluations))
         y = np.zeros(len(solver.evaluations))
@@ -110,12 +111,12 @@ def plot_evaluated_configurations(ls: List[BenchmarkResult]):
             y[i] = solver.evaluations[i].config['x1']
         ax.scatter(x, y, s=10, c=c[idx], label=solver.algorithm)
 
-    ax.legend(loc='upper right')
+    ax.legend(loc='upper left')
     ax.set_xlabel('$x_0$')
     ax.set_ylabel('$x_1$')
     fig.tight_layout()
 
-    plt.savefig('plots/{}_tested_configurations.pdf'.format(ls[0].name), bbox_inches="tight")
+    plt.savefig('evaluation/plots/{}_tested_configurations.pdf'.format(ls[0].name), bbox_inches='tight')
     # fig.show()
     # plt.show()
 
@@ -133,7 +134,7 @@ def plot_method_overhead(ls: List[BenchmarkResult], line_plot: bool = True):
             if previous is not None:
                 y.append((ev.start - previous) * 1000)
             previous = ev.end
-        solvers.setdefault(solver.algorithm, []).append(y)
+        solvers.setdefault(solver.algorithm, []).append(y[:244])
 
     if line_plot:
         def smooth(y, box_pts):
@@ -145,7 +146,7 @@ def plot_method_overhead(ls: List[BenchmarkResult], line_plot: bool = True):
 
         for name, values in solvers.items():
             y = np.mean(np.vstack(values), axis=0)[5:]
-            x = np.arange(0, len(y), 1)
+            x = np.arange(1, len(y) + 1, 1)
 
             ax.plot(x, smooth(y, 20), label=name)
 
@@ -164,8 +165,7 @@ def plot_method_overhead(ls: List[BenchmarkResult], line_plot: bool = True):
     ax.set_title('Solver Overhead')
     ax.set_ylabel('Overhead in ms')
 
-    plt.savefig('plots/{}_overhead.pdf'.format(ls[0].name), bbox_inches="tight")
-    plt.show()
+    plt.savefig('evaluation/plots/{}_overhead.pdf'.format(ls[0].name), bbox_inches='tight')
 
 
 def plot_openml_100(persistence: MongoPersistence):
@@ -191,10 +191,10 @@ def plot_openml_100(persistence: MongoPersistence):
             for solver in res.solvers:
                 y = solver.as_numpy()[1]
 
-                if solver.algorithm == 'Random Search':
-                    y += 0.1
+                if solver.algorithm == 'Random Search' or solver.algorithm == 'Grid Search':
+                    y += 0.05
                 if solver.algorithm == 'Optunity':
-                    y += 0.025
+                    y += 0.04
 
                 d.setdefault(solver.algorithm, []).append(y)
 
@@ -204,23 +204,83 @@ def plot_openml_100(persistence: MongoPersistence):
                     ls[key].append(list[0:325])
 
     fig, ax = plt.subplots()
-    fig.set_size_inches(16, 9)
+    fig.set_size_inches(20, 8)
     fig.set_dpi(250)
 
     for key, value in ls.items():
         y = np.mean(np.vstack(value), axis=0)
         print('{}: {}'.format(key, y[-1]))
 
-        ax.plot(y, label=key)
+        ax.plot(np.arange(1, len(y) + 1, 1), y, label=key)
 
-    ax.set_yscale('log')
+    # ax.set_yscale('log')
+    ax.set_xscale('log')
     ax.set_xlabel('Iteration')
     ax.set_ylabel('Misclassification Rate')
     ax.legend(loc='upper right')
-    plt.savefig('evaluation/plots/openml100.pdf', bbox_inches="tight")
-    plt.show()
+    plt.savefig('evaluation/plots/openml100.pdf', bbox_inches='tight')
 
 
-if __name__ == '__main__':
-    persistence = MongoPersistence('10.0.2.2', read_only=True, db='cash')
-    plot_openml_100(persistence)
+def plot_branin():
+    from mpl_toolkits.mplot3d import Axes3D
+
+    # noinspection PyStatementEffect
+    Axes3D.name
+
+    fig = plt.figure()
+    fig.set_size_inches(10, 8)
+    fig.set_dpi(250)
+    ax = fig.gca(projection='3d')
+
+    # Make data.
+    X = np.arange(0, 15, 0.05)
+    Y = np.arange(-5, 10, 0.05)
+    X, Y = np.meshgrid(X, Y)
+
+    Z = (Y - (5.1 / (4 * np.pi ** 2)) * X ** 2 + 5 * X / np.pi - 6) ** 2
+    Z += 10 * (1 - 1 / (8 * np.pi)) * np.cos(X) + 10
+
+    ax.plot_surface(X, Y, Z, cmap=cm.coolwarm, linewidth=0.01, edgecolors='k', antialiased=True)
+
+    ax.view_init(30, 120)
+    ax.set_xticks([0, 5, 10, 15])
+    ax.set_yticks([-5, 0, 5, 10])
+
+    ax.xaxis.set_rotate_label(False)
+    ax.yaxis.set_rotate_label(False)
+    ax.zaxis.set_rotate_label(False)
+
+    ax.set_xlabel('$x_0$', rotation=0)
+    ax.set_ylabel('$x_1$', rotation=0)
+    ax.set_zlabel('f$(x_0,\, x_1)$', rotation=90)
+    ax.set_title('Branin Function')
+
+    plt.savefig('evaluation/plots/branin.pdf', bbox_inches='tight')
+
+
+def plot_successive_halving():
+    plt.plot([0, 0.125, 0.25, 0.5, 1], [1, 0.40, 0.27, 0.2, 0.16])
+
+    plt.plot([0, 0.125, 0.25], [1, 0.65, 0.5])
+    plt.plot([0, 0.125, 0.25], [1, 0.55, 0.40])
+
+    plt.plot([0, 0.125, 0.25, 0.5], [1, 0.45, 0.25, 0.22])
+
+    plt.plot([0, 0.125], [1, 0.9])
+    plt.plot([0, 0.125], [1, 0.85])
+    plt.plot([0, 0.125], [1, 0.76])
+    plt.plot([0, 0.125], [1, 0.68])
+
+    # Budget Constraints
+    plt.plot([0.125, 0.125], [0, 1], c='k')
+    plt.plot([0.25, 0.25], [0, 1], c='k')
+    plt.plot([0.5, 0.5], [0, 1], c='k')
+    plt.plot([1, 1], [0, 1], c='k')
+
+    plt.ylim([0, 1])
+    plt.xlim([0, 1])
+    plt.ylabel('Loss')
+    plt.xlabel('Budget')
+    plt.xticks([0.125, 0.25, 0.5, 1.0], ['12.5%', '25%', '50%', '100%'])
+
+    plt.savefig('evaluation/plots/successive_halving.pdf', bbox_inches='tight')

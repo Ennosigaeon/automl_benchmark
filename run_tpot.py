@@ -1,16 +1,17 @@
-import numpy as np
+import datetime
+
 from tpot import TPOTClassifier
 
 from benchmark import OpenMLBenchmark
 
-timeout = 60
-run_timeout = 30
+timeout = 3600
+run_timeout = 360
 jobs = 4
 
 
 def main(bm: OpenMLBenchmark):
-    X_train = np.concatenate((bm.X_valid, bm.X_train))
-    y_train = np.concatenate((bm.y_valid, bm.y_train))
+    X_train = bm.X_train
+    y_train = bm.y_train
     X_test = bm.X_test
     y_test = bm.y_test
 
@@ -19,7 +20,7 @@ def main(bm: OpenMLBenchmark):
         max_eval_time_mins=run_timeout / 60,
         scoring='accuracy',
         n_jobs=jobs,
-        verbosity=3
+        verbosity=2
     )
     pipeline_optimizer.fit(X_train, y_train)
     print(pipeline_optimizer.fitted_pipeline_)
@@ -27,12 +28,14 @@ def main(bm: OpenMLBenchmark):
 
 
 if __name__ == '__main__':
-    print('Timeout: ', timeout)
-    print('Run Timeout: ', run_timeout)
+    for i in range(4):
+        print('#######\nIteration {}\n#######'.format(i))
+        print('Timeout: ', timeout)
+        print('Run Timeout: ', run_timeout)
 
-    task_ids = [22, 37, 2079, 3543, 3899, 3913, 3917, 9950, 9980, 14966]
-    for task in task_ids:
-        print('Starting task {}'.format(task))
-        bm = OpenMLBenchmark(task)
+        task_ids = [15, 23, 29, 3021, 41, 2079, 3560, 3561, 3904, 3946, 9955, 9985, 7592, 14969, 146606]
+        for task in task_ids:
+            print('Starting task {} at {}'.format(task, datetime.datetime.now().time()))
+            bm = OpenMLBenchmark(task)
 
-        main(bm)
+            main(bm)

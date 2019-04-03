@@ -27,9 +27,9 @@ def run(persistence: MongoPersistence, b: AbstractBenchmark):
         'smac': True,
         'hyperopt': True,  # Only single threaded
         'bohb': True,
-        'robo': False,  # Only single threaded
+        'robo': True,  # Only single threaded
         'optunity': True,
-        'btb': False  # Only single threaded
+        'btb': True  # Only single threaded
     }
     config = Namespace(**config_dict)
 
@@ -147,14 +147,14 @@ if __name__ == '__main__':
     logger.info('Main start')
     try:
         persistence = MongoPersistence(args.database, read_only=False)
-        # b = benchmark.Iris()
-        # for i in range(1):
-        #     run(persistence, b)
+        b = benchmark.Camelback()
+        for i in range(10):
+            run(persistence, b)
 
-        for b in benchmark.OpenML100Suite().load(chunk=args.chunk):
-            logger.info('Starting OpenML benchmark {}'.format(b.task_id))
-            for i in range(1):
-                run(persistence, b)
+        # for b in benchmark.OpenML100Suite().load(chunk=args.chunk):
+        #     logger.info('Starting OpenML benchmark {}'.format(b.task_id))
+        #     for i in range(1):
+        #         run(persistence, b)
     except (SystemExit, KeyboardInterrupt, Exception) as e:
         logger.error(e, exc_info=True)
 
