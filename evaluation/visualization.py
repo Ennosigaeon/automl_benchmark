@@ -1,5 +1,6 @@
 from typing import List
 
+import matplotlib
 import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 import numpy as np
@@ -38,6 +39,7 @@ def plot_evaluation_performance(benchmark_result: BenchmarkResult):
 
 def plot_incumbent_performance(ls: List[BenchmarkResult]):
     benchmark = ls[0].benchmark
+    matplotlib.rcParams.update({'font.size': 12})
 
     fig, ax = plt.subplots()
     fig.set_size_inches(16, 9)
@@ -47,7 +49,10 @@ def plot_incumbent_performance(ls: List[BenchmarkResult]):
     for res in ls:
         for solver in res.solvers:
             x, y = solver.as_numpy(incumbent=True, x_axis='iterations')
-            solvers.setdefault(solver.algorithm, []).append(y)
+            label = solver.algorithm
+            if label == 'RoBo gp':
+                label = 'RoBo'
+            solvers.setdefault(label, []).append(y)
 
     f_opt = benchmark.get_meta_information()['f_opt']
     ax.plot([1, len(next(iter(solvers.values()))[0]) + 1], [f_opt, f_opt], 'k', label='Optimum')
@@ -78,6 +83,8 @@ def plot_incumbent_performance(ls: List[BenchmarkResult]):
 
 
 def plot_evaluated_configurations(ls: List[BenchmarkResult]):
+    matplotlib.rcParams.update({'font.size': 11})
+
     benchmark = ls[0].benchmark
     res = ls[0]
 
@@ -109,9 +116,14 @@ def plot_evaluated_configurations(ls: List[BenchmarkResult]):
         for i in range(len(solver.evaluations)):
             x[i] = solver.evaluations[i].config['x0']
             y[i] = solver.evaluations[i].config['x1']
-        ax.scatter(x, y, s=10, c=c[idx], label=solver.algorithm)
 
-    ax.legend(loc='upper left')
+        label = solver.algorithm
+        if label == 'BOHB':
+            label = 'Guided Search'
+
+        ax.scatter(x, y, s=10, c=c[idx], label=label)
+
+    ax.legend(loc='upper left', framealpha=1, handletextpad=0)
     ax.set_xlabel('$x_0$')
     ax.set_ylabel('$x_1$')
     fig.tight_layout()
@@ -135,6 +147,8 @@ def plot_method_overhead(ls: List[BenchmarkResult], line_plot: bool = True):
                 y.append((ev.start - previous) * 1000)
             previous = ev.end
         solvers.setdefault(solver.algorithm, []).append(y[:244])
+
+    solvers['RoBo'] = solvers.pop('RoBo gp')
 
     if line_plot:
         def smooth(y, box_pts):
@@ -171,6 +185,8 @@ def plot_method_overhead(ls: List[BenchmarkResult], line_plot: bool = True):
 def plot_openml_100(persistence: MongoPersistence):
     tasks = OpenML100Suite.tasks()
 
+    matplotlib.rcParams.update({'font.size': 12})
+
     ls = {
         'Random Search': [],
         'Grid Search': [],
@@ -203,6 +219,8 @@ def plot_openml_100(persistence: MongoPersistence):
                 if np.mean(list) < 1:
                     ls[key].append(list[0:325])
 
+    ls['RoBo'] = ls.pop('RoBo gp')
+
     fig, ax = plt.subplots()
     fig.set_size_inches(20, 8)
     fig.set_dpi(250)
@@ -223,6 +241,8 @@ def plot_openml_100(persistence: MongoPersistence):
 
 def plot_branin():
     from mpl_toolkits.mplot3d import Axes3D
+
+    matplotlib.rcParams.update({'font.size': 12})
 
     # noinspection PyStatementEffect
     Axes3D.name
