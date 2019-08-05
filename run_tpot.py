@@ -4,7 +4,7 @@ from tpot import TPOTClassifier
 
 from benchmark import OpenMLBenchmark
 
-timeout = 3600
+timeout = 3600  # in seconds
 run_timeout = 360
 jobs = 4
 
@@ -33,8 +33,8 @@ if __name__ == '__main__':
         print('Timeout: ', timeout)
         print('Run Timeout: ', run_timeout)
 
-        task_ids = [15, 23, 29, 3021, 41, 2079, 3560, 3561, 3904, 3946, 9955, 9985, 7592, 14969, 146606]
-        task_ids = [24, 3543, 7948, 14967, 125920]
+        task_ids = [15, 23, 24, 29, 3021, 41, 2079, 3543, 3560, 3561,
+                    3904, 3946, 9955, 9985, 7592, 14969, 14968, 14967, 125920, 146606]
         for task in task_ids:
             print('Starting task {} at {}'.format(task, datetime.datetime.now().time()))
             bm = OpenMLBenchmark(task)
