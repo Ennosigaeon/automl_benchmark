@@ -15,8 +15,8 @@ from smac.scenario.scenario import Scenario
 
 from benchmark import OpenMLBenchmark
 
-timeout = 3600
-run_timeout = 360
+timeout = 3600  # in seconds
+run_timeout = 360  # in seconds
 jobs = 4
 random = True
 

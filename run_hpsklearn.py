@@ -1,4 +1,5 @@
 import time
+import traceback
 
 import hpsklearn
 import humanfriendly
@@ -8,7 +9,7 @@ import sklearn
 from benchmark import OpenMLBenchmark
 
 max_evals = 325
-run_timeout = 60
+run_timeout = 60  # in minutes
 
 
 def main(bm: OpenMLBenchmark):
@@ -49,4 +50,5 @@ if __name__ == '__main__':
             except Exception as e:
                 if isinstance(e, KeyboardInterrupt):
                     raise e
-                print(e)
+                traceback.print_exc()
+                print('Misclassification rate', 1)

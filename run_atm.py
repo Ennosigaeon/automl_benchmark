@@ -1,3 +1,4 @@
+import datetime
 import os
 import shutil
 import subprocess
@@ -7,8 +8,8 @@ import pandas as pd
 
 from benchmark import OpenMLBenchmark
 
-timeout = 3600
-run_timeout = 360
+timeout = 60  # in minutes
+# run_timeout = 30
 jobs = 4
 
 
@@ -29,14 +30,12 @@ def main(bm: OpenMLBenchmark):
     pd.DataFrame(test, columns=headers).to_csv(test_path, index=None)
 
     sql_path = '{}/assets/atm_sql.yaml'.format(os.getcwd())
-    cmd = 'cd /vagrant/phd/exisiting_solutions/meta_frameworks/ATM/ && ' \
-          'python3 scripts/enter_data.py --sql-config {sql} --run-config {cwd}/assets/atm_run.yaml ' \
-          '--train-path {train_path} --test-path {test_path}' \
-        .format(sql=sql_path, cwd=os.getcwd(), train_path=train_path, test_path=test_path)
+    cmd = 'atm enter_data --sql-config {sql} --train-path {train_path} --test-path {test_path}' \
+          ' --budget-type walltime --budget {budget} --metric accuracy --name {name}' \
+        .format(sql=sql_path, train_path=train_path, test_path=test_path, budget=timeout, name=bm.task_id)
     subprocess.call(cmd, shell=True)
 
-    cmd = 'cd /vagrant/phd/exisiting_solutions/meta_frameworks/ATM/ && python3 scripts/worker.py --sql-config {}' \
-        .format(sql_path)
+    cmd = 'atm worker --no-save --sql-config {}'.format(sql_path)
 
     procs = [subprocess.Popen(cmd, shell=True) for i in range(jobs)]
     for p in procs:
@@ -56,12 +55,19 @@ if __name__ == '__main__':
         os.mkdir('/tmp/atm/')
 
         print('Timeout: ', timeout)
-        print('Run Timeout: ', run_timeout)
 
         task_ids = [15, 23, 24, 29, 3021, 41, 2079, 3543, 3560, 3561,
                     3904, 3946, 9955, 9985, 7592, 14969, 14968, 14967, 125920, 146606]
         for task in task_ids:
-            print('Starting task {}'.format(task))
+            print('Starting task {} at {}'.format(task, datetime.datetime.now().time()))
             bm = OpenMLBenchmark(task)
 
             main(bm)
+
+###########
+# Get results via
+#
+# SELECT ds.name, 1 - max(cs.test_judgment_metric) as 'Misclassification rate' FROM classifiers cs
+# JOIN dataruns dr ON cs.datarun_id = dr.id
+# JOIN datasets ds ON dr.dataset_id = ds.id
+# GROUP BY cs.datarun_id

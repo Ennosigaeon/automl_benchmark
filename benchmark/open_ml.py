@@ -1,13 +1,14 @@
-import math
 import multiprocessing
 import os
 import time
 from typing import Generator
 
+import math
 import numpy as np
 import openml
 from hpolib.util import rng_helper
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
 
 import util.logger
 from benchmark import AbstractBenchmark, create_esimator
@@ -55,11 +56,17 @@ class OpenMLHoldoutDataManager():
         task = openml.tasks.get_task(self.task_id)
 
         dataset = openml.datasets.get_dataset(dataset_id=task.dataset_id)
-        X, y, self.names = dataset.get_data(
-            target=dataset.default_target_attribute,
-            return_attribute_names=True,
-            return_categorical_indicator=False
+        X, y, categorical, self.names = dataset.get_data(
+            target=dataset.default_target_attribute
         )
+
+        for name, cat in zip(self.names, categorical):
+            if cat:
+                X[name] = LabelEncoder().fit_transform(X[name].cat.add_categories(['<MISSING>']).fillna('<MISSING>'))
+
+        X = X.values
+        y = y.values.__array__()
+        y = LabelEncoder().fit_transform(y)
 
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(X, y, test_size=test_size)
         return self

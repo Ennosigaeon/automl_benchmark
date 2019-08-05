@@ -4,7 +4,7 @@ from tpot import TPOTClassifier
 
 from benchmark import OpenMLBenchmark
 
-timeout = 3600
+timeout = 3600  # in seconds
 run_timeout = 360
 jobs = 4
 
