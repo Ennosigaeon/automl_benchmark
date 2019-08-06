@@ -97,8 +97,18 @@ def main(bm: OpenMLBenchmark):
         p = multiprocessing.Process(target=spawn_classifier, args=(seed + i, name))
         p.start()
         processes.append(p)
-    for p in processes:
-        p.join()
+
+    start = time.time()
+    while time.time() - start <= 1.5 * timeout:
+        if any(p.is_alive() for p in processes):
+            time.sleep(10)
+        else:
+            break
+    else:
+        print('Grace period exceed. Killing workers.')
+        for p in processes:
+            p.terminate()
+            p.join()
 
     print('Starting to build an ensemble!')
     automl = AutoSklearnClassifier(
