@@ -8,10 +8,10 @@ from hpolib.abstract_benchmark import AbstractBenchmark
 import benchmark
 import util.logger
 from adapter.base import BenchmarkResult
-from evaluation.base import MongoPersistence
+from evaluation.base import Persistence
 
 
-def run(persistence: MongoPersistence, b: AbstractBenchmark):
+def run(persistence: Persistence, b: AbstractBenchmark):
     # db.Branin.drop()
     # db.Branin.find({}, {'solvers.incumbents': 0}).pretty()
     # db.Branin.count()
@@ -146,15 +146,15 @@ if __name__ == '__main__':
 
     logger.info('Main start')
     try:
-        persistence = MongoPersistence(args.database, read_only=False)
-        b = benchmark.Camelback()
-        for i in range(10):
-            run(persistence, b)
+        persistence = Persistence()
+        # b = benchmark.Rosenbrock20D()
+        # for i in range(20):
+        #     run(persistence, b)
 
-        # for b in benchmark.OpenML100Suite().load(chunk=args.chunk):
-        #     logger.info('Starting OpenML benchmark {}'.format(b.task_id))
-        #     for i in range(1):
-        #         run(persistence, b)
+        for b in benchmark.OpenML100Suite().load(chunk=args.chunk):
+            logger.info('Starting OpenML benchmark {}'.format(b.task_id))
+            for i in range(1):
+                run(persistence, b)
     except (SystemExit, KeyboardInterrupt, Exception) as e:
         logger.error(e, exc_info=True)
 
