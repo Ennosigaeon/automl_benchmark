@@ -9,7 +9,24 @@ import util.logger
 
 logger = util.logger.get()
 
-class MongoPersistence:
+class Persistence:
+
+    def clear_old_results(self, benchmark: AbstractBenchmark) -> None:
+        pass
+
+    def store_new_run(self, res: BenchmarkResult):
+        pass
+
+    def store_results(self, res: BenchmarkResult, stats: OptimizationStatistic) -> None:
+        pass
+
+    def load_single(self, benchmark: AbstractBenchmark) -> BenchmarkResult:
+        pass
+
+    def load_all(self, benchmark: AbstractBenchmark) -> List[BenchmarkResult]:
+        pass
+
+class MongoPersistence(Persistence):
 
     def __init__(self, url: str, port: int = 27017, db='benchmarks', read_only: bool = False):
         self.client = MongoClient(url, port)
