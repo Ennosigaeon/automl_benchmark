@@ -2,6 +2,7 @@ import datetime
 import os
 import shutil
 import subprocess
+import time
 
 import numpy as np
 import pandas as pd
@@ -38,10 +39,17 @@ def main(bm: OpenMLBenchmark):
     cmd = 'atm worker --no-save --sql-config {}'.format(sql_path)
 
     procs = [subprocess.Popen(cmd, shell=True) for i in range(jobs)]
-    for p in procs:
-        p.wait()
 
-    subprocess.call(cmd, shell=True)
+    start = time.time()
+    while time.time() - start <= 1.05 * timeout:
+        if any(p.poll() is None for p in procs):
+            time.sleep(10)
+        else:
+            break
+    else:
+        print('Grace period exceed. Killing workers.')
+        for p in procs:
+            p.terminate()
 
 
 if __name__ == '__main__':
