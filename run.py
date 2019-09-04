@@ -17,9 +17,9 @@ def run(persistence: Persistence, b: AbstractBenchmark):
     # db.Branin.count()
 
     config_dict = {
-        'n_jobs': 1,
+        'n_jobs': 8,
         'timeout': None,
-        'iterations': 250,
+        'iterations': 325,
         'seed': int(time.time()),
 
         'random_search': True,
