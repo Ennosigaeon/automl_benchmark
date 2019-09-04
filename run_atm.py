@@ -9,8 +9,7 @@ import pandas as pd
 
 from benchmark import OpenMLBenchmark
 
-timeout = 60  # in minutes
-# run_timeout = 30
+timeout = 3600  # in seconds
 jobs = 4
 
 
@@ -33,7 +32,7 @@ def main(bm: OpenMLBenchmark):
     sql_path = '{}/assets/atm_sql.yaml'.format(os.getcwd())
     cmd = 'atm enter_data --sql-config {sql} --train-path {train_path} --test-path {test_path}' \
           ' --budget-type walltime --budget {budget} --metric accuracy --name {name}' \
-        .format(sql=sql_path, train_path=train_path, test_path=test_path, budget=timeout, name=bm.task_id)
+        .format(sql=sql_path, train_path=train_path, test_path=test_path, budget=timeout // 60, name=bm.task_id)
     subprocess.call(cmd, shell=True)
 
     cmd = 'atm worker --no-save --sql-config {}'.format(sql_path)
@@ -50,6 +49,10 @@ def main(bm: OpenMLBenchmark):
         print('Grace period exceed. Killing workers.')
         for p in procs:
             p.terminate()
+
+    # Only used to mark datarun as finished. Should terminate immediately
+    proc = subprocess.Popen(cmd, shell=True)
+    proc.wait()
 
 
 if __name__ == '__main__':
