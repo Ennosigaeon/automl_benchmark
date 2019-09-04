@@ -138,12 +138,6 @@ def main(bm: OpenMLBenchmark):
 if __name__ == '__main__':
     for i in range(4):
         print('#######\nIteration {}\n#######'.format(i))
-
-        try:
-            shutil.rmtree('/tmp/autosklearn/')
-        except OSError as e:
-            pass
-
         print('Timeout: ', timeout)
         print('Run Timeout: ', run_timeout)
         print('Random Search: ', random)
@@ -152,6 +146,13 @@ if __name__ == '__main__':
                     3904, 3946, 9955, 9985, 7592, 14969, 14968, 14967, 125920, 146606]
         for task in task_ids:
             print('Starting task {} at {}'.format(task, datetime.datetime.now().time()))
+
+            # Evaluations fill complete disk. Cleanup before starting new benchmark.
+            try:
+                shutil.rmtree('/tmp/autosklearn/')
+            except OSError as e:
+                pass
+
             bm = OpenMLBenchmark(task)
 
             with warnings.catch_warnings():
