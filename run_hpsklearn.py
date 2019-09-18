@@ -1,3 +1,4 @@
+import datetime
 import time
 import traceback
 
@@ -8,8 +9,8 @@ import sklearn
 
 from benchmark import OpenMLBenchmark
 
-max_evals = 325
-run_timeout = 60  # in minutes
+timeout = 3600  # in seconds
+run_timeout = 60
 
 
 def main(bm: OpenMLBenchmark):
@@ -23,7 +24,8 @@ def main(bm: OpenMLBenchmark):
         classifier=hpsklearn.components.any_classifier('clf'),
         algo=hyperopt.tpe.suggest,
         trial_timeout=run_timeout,
-        max_evals=max_evals,
+        max_evals=-1,
+        timeout=timeout,
         seed=int(start)
     )
     estimator.fit(X_train, y_train)
@@ -36,13 +38,12 @@ def main(bm: OpenMLBenchmark):
 if __name__ == '__main__':
     for i in range(4):
         print('#######\nIteration {}\n#######'.format(i))
-        print('Max Evals: ', max_evals)
         print('Run Timeout: ', run_timeout)
 
         task_ids = [15, 23, 24, 29, 3021, 41, 2079, 3543, 3560, 3561,
                     3904, 3946, 9955, 9985, 7592, 14969, 14968, 14967, 125920, 146606]
         for task in task_ids:
-            print('Starting task {}'.format(task))
+            print('Starting task {} at {}'.format(task, datetime.datetime.now().time()))
             bm = OpenMLBenchmark(task)
 
             try:
