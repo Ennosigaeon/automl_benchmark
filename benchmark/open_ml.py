@@ -68,6 +68,8 @@ class OpenMLHoldoutDataManager():
         y = y.values.__array__()
         y = LabelEncoder().fit_transform(y)
 
+        X = X.astype(np.float64)
+
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(X, y, test_size=test_size)
         return self
 
