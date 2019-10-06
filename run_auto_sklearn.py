@@ -131,7 +131,7 @@ def main(bm: OpenMLBenchmark):
     )
 
     predictions = automl.predict(X_test)
-    # print(automl.show_models())
+    print(automl.show_models())
     print('Misclassification rate', 1 - sklearn.metrics.accuracy_score(y_test, predictions))
 
 
