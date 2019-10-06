@@ -20,7 +20,7 @@ def main(bm: OpenMLBenchmark):
         max_eval_time_mins=run_timeout / 60,
         scoring='accuracy',
         n_jobs=jobs,
-        verbosity=2
+        verbosity=1
     )
     pipeline_optimizer.fit(X_train, y_train)
     print(pipeline_optimizer.fitted_pipeline_)
