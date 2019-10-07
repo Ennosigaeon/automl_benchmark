@@ -17,7 +17,7 @@ from smac.scenario.scenario import Scenario
 from benchmark import OpenMLBenchmark
 
 timeout = 3600  # in seconds
-run_timeout = 360  # in seconds
+run_timeout = 600  # in seconds
 jobs = 2
 random = False
 
@@ -100,7 +100,7 @@ def main(bm: OpenMLBenchmark):
         processes.append(p)
 
     start = time.time()
-    while time.time() - start <= 1.5 * timeout:
+    while time.time() - start <= 1.05 * timeout:
         if any(p.is_alive() for p in processes):
             time.sleep(10)
         else:

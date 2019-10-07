@@ -10,7 +10,7 @@ import sklearn
 from benchmark import OpenMLBenchmark
 
 timeout = 3600  # in seconds
-run_timeout = 360  # in seconds
+run_timeout = 600  # in seconds
 
 
 def main(bm: OpenMLBenchmark):
@@ -52,6 +52,7 @@ if __name__ == '__main__':
             for j in range(100):
                 print('Attempt {}...'.format(j))
                 try:
+
                     main(bm)
                     break
                 except Exception as e:
