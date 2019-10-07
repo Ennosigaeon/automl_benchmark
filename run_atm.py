@@ -6,11 +6,12 @@ import time
 
 import numpy as np
 import pandas as pd
+import traceback
 
 from benchmark import OpenMLBenchmark
 
 timeout = 3600  # in seconds
-jobs = 4
+jobs = 2
 
 
 def main(bm: OpenMLBenchmark):
@@ -56,7 +57,7 @@ def main(bm: OpenMLBenchmark):
 
 
 if __name__ == '__main__':
-    for i in range(4):
+    for i in range(10):
         print('#######\nIteration {}\n#######'.format(i))
 
         try:
@@ -70,10 +71,15 @@ if __name__ == '__main__':
         task_ids = [15, 23, 24, 29, 3021, 41, 2079, 3543, 3560, 3561,
                     3904, 3946, 9955, 9985, 7592, 14969, 14968, 14967, 125920, 146606]
         for task in task_ids:
-            print('Starting task {} at {}'.format(task, datetime.datetime.now().time()))
-            bm = OpenMLBenchmark(task)
-
-            main(bm)
+            try:
+                print('Starting task {} at {}'.format(task, datetime.datetime.now().time()))
+                bm = OpenMLBenchmark(task)
+                main(bm)
+            except Exception as e:
+                if isinstance(e, KeyboardInterrupt):
+                    raise e
+                traceback.print_exc()
+                print('Misclassification rate', 1)
 
 ###########
 # Get results via
@@ -82,3 +88,4 @@ if __name__ == '__main__':
 # JOIN dataruns dr ON cs.datarun_id = dr.id
 # JOIN datasets ds ON dr.dataset_id = ds.id
 # GROUP BY cs.datarun_id
+# ORDER BY CAST(name AS INTEGER)

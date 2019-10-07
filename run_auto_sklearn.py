@@ -7,6 +7,7 @@ import warnings
 import sklearn.datasets
 import sklearn.metrics
 import sklearn.model_selection
+import traceback
 from autosklearn.classification import AutoSklearnClassifier
 from autosklearn.constants import *
 from autosklearn.metrics import accuracy
@@ -17,8 +18,8 @@ from benchmark import OpenMLBenchmark
 
 timeout = 3600  # in seconds
 run_timeout = 360  # in seconds
-jobs = 4
-random = True
+jobs = 2
+random = False
 
 ensemble_size = 1 if random else 20
 
@@ -136,7 +137,7 @@ def main(bm: OpenMLBenchmark):
 
 
 if __name__ == '__main__':
-    for i in range(4):
+    for i in range(10):
         print('#######\nIteration {}\n#######'.format(i))
         print('Timeout: ', timeout)
         print('Run Timeout: ', run_timeout)
@@ -145,16 +146,22 @@ if __name__ == '__main__':
         task_ids = [15, 23, 24, 29, 3021, 41, 2079, 3543, 3560, 3561,
                     3904, 3946, 9955, 9985, 7592, 14969, 14968, 14967, 125920, 146606]
         for task in task_ids:
-            print('Starting task {} at {}'.format(task, datetime.datetime.now().time()))
-
-            # Evaluations fill complete disk. Cleanup before starting new benchmark.
             try:
-                shutil.rmtree('/tmp/autosklearn/')
-            except OSError as e:
-                pass
+                print('Starting task {} at {}'.format(task, datetime.datetime.now().time()))
 
-            bm = OpenMLBenchmark(task)
+                # Evaluations fill complete disk. Cleanup before starting new benchmark.
+                try:
+                    shutil.rmtree('/tmp/autosklearn/')
+                except OSError as e:
+                    pass
 
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore", category=RuntimeWarning)
-                main(bm)
+                bm = OpenMLBenchmark(task)
+
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", category=RuntimeWarning)
+                    main(bm)
+            except Exception as e:
+                if isinstance(e, KeyboardInterrupt):
+                    raise e
+                traceback.print_exc()
+                print('Misclassification rate', 1)

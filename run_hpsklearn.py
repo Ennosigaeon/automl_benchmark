@@ -10,7 +10,7 @@ import sklearn
 from benchmark import OpenMLBenchmark
 
 timeout = 3600  # in seconds
-run_timeout = 60
+run_timeout = 360  # in seconds
 
 
 def main(bm: OpenMLBenchmark):
@@ -31,13 +31,15 @@ def main(bm: OpenMLBenchmark):
     estimator.fit(X_train, y_train)
     predictions = estimator.predict(X_test)
 
+    print(estimator.best_model())
     print('Misclassification rate', 1 - sklearn.metrics.accuracy_score(y_test, predictions))
     print('Duration', humanfriendly.format_timespan(time.time() - start))
 
 
 if __name__ == '__main__':
-    for i in range(4):
+    for i in range(10):
         print('#######\nIteration {}\n#######'.format(i))
+        print('Timeout: ', timeout)
         print('Run Timeout: ', run_timeout)
 
         task_ids = [15, 23, 24, 29, 3021, 41, 2079, 3543, 3560, 3561,
@@ -46,10 +48,14 @@ if __name__ == '__main__':
             print('Starting task {} at {}'.format(task, datetime.datetime.now().time()))
             bm = OpenMLBenchmark(task)
 
-            try:
-                main(bm)
-            except Exception as e:
-                if isinstance(e, KeyboardInterrupt):
-                    raise e
+            for j in range(100):
+                print('Attempt {}...'.format(j))
+                try:
+                    main(bm)
+                    break
+                except Exception as e:
+                    if isinstance(e, KeyboardInterrupt):
+                        raise e
+            else:
                 traceback.print_exc()
                 print('Misclassification rate', 1)
