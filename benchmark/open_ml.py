@@ -93,7 +93,7 @@ class OpenMLBenchmark(AbstractBenchmark):
         manager = multiprocessing.Manager()
         score = manager.Value('d', 1.0)
 
-        logger.debug('Testing configuration {}'.format(configuration))
+        # logger.debug('Testing configuration {}'.format(configuration))
 
         self.rng = rng_helper.get_rng(rng=seed, self_rng=self.rng)
 
