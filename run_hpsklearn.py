@@ -44,9 +44,9 @@ if __name__ == '__main__':
                 146821, 146822, 146825, 167119, 167120, 168329, 168330, 168331, 168332, 168335, 168337, 168338,
                 168868, 168908, 168909, 168910, 168911, 168912, 189354, 189355, 189356]
     for task in task_ids:
-        print('#######Starting task {} at {}#######'.format(task, datetime.datetime.now().time()))
+        print('#######\nStarting task {}\n#######'.format(task))
         for i in range(10):
-            print('##\nIteration {}\n##'.format(i))
+            print('##\nIteration {} at {}\n##'.format(i, datetime.datetime.now().time()))
             bm = OpenMLBenchmark(task)
 
             for j in range(100):
