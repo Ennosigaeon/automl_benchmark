@@ -121,6 +121,7 @@ def main(bm: OpenMLBenchmark):
         output_folder=output_folder,
         initial_configurations_via_metalearning=0,
         seed=seed,
+        ml_memory_limit=4096
     )
     automl.fit_ensemble(
         y_train,
