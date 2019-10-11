@@ -1,12 +1,13 @@
 import datetime
 import os
 import shutil
+import signal
 import subprocess
 import time
+import traceback
 
 import numpy as np
 import pandas as pd
-import traceback
 
 from benchmark import OpenMLBenchmark
 
@@ -38,7 +39,7 @@ def main(bm: OpenMLBenchmark):
 
     cmd = 'atm worker --no-save --sql-config {}'.format(sql_path)
 
-    procs = [subprocess.Popen(cmd, shell=True) for i in range(jobs)]
+    procs = [subprocess.Popen(cmd, shell=True, preexec_fn=os.setsid) for i in range(jobs)]
 
     start = time.time()
     while time.time() - start <= 1.05 * timeout:
@@ -49,6 +50,7 @@ def main(bm: OpenMLBenchmark):
     else:
         print('Grace period exceed. Killing workers.')
         for p in procs:
+            os.killpg(os.getpgid(p.pid), signal.SIGTERM)
             p.terminate()
 
     # Only used to mark datarun as finished. Should terminate immediately
