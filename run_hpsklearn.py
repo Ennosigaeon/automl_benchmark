@@ -1,4 +1,6 @@
 import datetime
+import itertools
+import sys
 import time
 import traceback
 
@@ -40,9 +42,18 @@ if __name__ == '__main__':
     print('Timeout: ', timeout)
     print('Run Timeout: ', run_timeout)
 
-    task_ids = [3, 12, 31, 53, 3917, 3945, 7593, 9952, 9977, 9981, 10101, 14965, 34539, 146195, 146212, 146818,
-                146821, 146822, 146825, 167119, 167120, 168329, 168330, 168331, 168332, 168335, 168337, 168338,
-                168868, 168908, 168909, 168910, 168911, 168912, 189354, 189355, 189356]
+    task_ids = [[3, 12, 31, 53], [3917, 3945, 7593, 9952], [9977, 9981, 10101, 14965], [34539, 146195, 146212, 146818],
+                [146821, 146822, 146825, 167119], [167120, 168329, 168330, 168331], [168332, 168335, 168337, 168338],
+                [168868, 168908, 168909, 168910], [168911, 168912, 189354, 189355, 189356]]
+
+    idx = None
+    if len(sys.argv) > 1:
+        idx = int(sys.argv[1])
+        print('Using chunk {}/8'.format(idx))
+        task_ids = task_ids[idx]
+    else:
+        task_ids = list(itertools.chain.from_iterable(task_ids))
+
     for task in task_ids:
         print('#######\nStarting task {}\n#######'.format(task))
         for i in range(10):
