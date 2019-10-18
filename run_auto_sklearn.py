@@ -71,7 +71,8 @@ def get_spawn_classifier(X_train, y_train, tmp_folder, output_folder, seed0):
             initial_configurations_via_metalearning=initial_configurations_via_metalearning,
             seed=seed,
             smac_scenario_args=smac_scenario_args,
-            get_smac_object_callback=callback
+            get_smac_object_callback=callback,
+            ml_memory_limit=4096
         )
         automl.fit(X_train, y_train, dataset_name=dataset_name)
         print(automl.sprint_statistics())
