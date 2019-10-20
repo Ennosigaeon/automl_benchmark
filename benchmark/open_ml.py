@@ -24,6 +24,7 @@ class OpenMLHoldoutDataManager():
         self.y_train = None
         self.X_test = None
         self.y_test = None
+        self.categorical = None
         self.names = None
 
         self.save_to = os.path.expanduser('~/OpenML')
@@ -83,6 +84,7 @@ class OpenMLHoldoutDataManager():
         X = X.astype(np.float64)
 
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(X, y, test_size=test_size)
+        self.categorical = categorical
         return self
 
 
@@ -98,6 +100,7 @@ class OpenMLBenchmark(AbstractBenchmark):
             self.y_train = data.y_train
             self.X_test = data.X_test
             self.y_test = data.y_test
+            self.categorical = data.categorical
             self.column_names = data.names
 
     def objective_function(self, configuration, timeout: int = 300, budget=1, seed=None):
@@ -117,7 +120,7 @@ class OpenMLBenchmark(AbstractBenchmark):
 
         p = multiprocessing.Process(target=self._fit_and_score, args=(configuration, X_train, y_train, score))
         p.start()
-        p.join(timeout)
+        p.join(30)
 
         if p.is_alive():
             logger.debug('Abort fitting after timeout')
