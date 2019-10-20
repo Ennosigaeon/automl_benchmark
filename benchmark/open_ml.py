@@ -6,6 +6,7 @@ from typing import Generator
 import math
 import numpy as np
 import openml
+import pandas as pd
 from hpolib.util import rng_helper
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
@@ -62,7 +63,18 @@ class OpenMLHoldoutDataManager():
 
         for name, cat in zip(self.names, categorical):
             if cat:
-                X[name] = LabelEncoder().fit_transform(X[name].cat.add_categories(['<MISSING>']).fillna('<MISSING>'))
+                enc = LabelEncoder()
+                missing = np.any(pd.isna(X[name]))
+
+                missing_vec = pd.isna(X[name])
+
+                x_tmp = X[name].cat.add_categories(['<MISSING>']).fillna('<MISSING>')
+                X[name] = enc.fit_transform(x_tmp)
+
+                if missing:
+                    idx = enc.transform(['<MISSING>'])[0]
+                    X[name][X[name] == idx] = np.nan
+                    assert pd.isna(X[name]).equals(missing_vec)
 
         X = X.values
         y = y.values.__array__()
