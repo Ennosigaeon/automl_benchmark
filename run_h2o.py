@@ -1,7 +1,9 @@
 import datetime
 import itertools
 import random
+import shutil
 import sys
+import tempfile
 import traceback
 
 import h2o
@@ -19,7 +21,9 @@ jobs = 4
 
 def main(bm: OpenMLBenchmark):
     try:
-        h2o.init(nthreads=jobs, port=str(60000 + random.randrange(0, 5000)))
+        log_dir = tempfile.mkdtemp()
+
+        h2o.init(nthreads=jobs, port=str(60000 + random.randrange(0, 5000)), ice_root=log_dir)
         h2o.no_progress()
         X_test = bm.X_test
         y_test = bm.y_test
@@ -58,6 +62,7 @@ def main(bm: OpenMLBenchmark):
               1 - sklearn.metrics.accuracy_score(y_test, predictions['predict'].as_data_frame()))
     finally:
         h2o.cluster().shutdown()
+        shutil.rmtree(log_dir)
 
 
 if __name__ == '__main__':
