@@ -4,6 +4,7 @@ import traceback
 import sklearn.datasets
 import sklearn.metrics
 import sklearn.model_selection
+from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.impute import SimpleImputer
 
@@ -12,6 +13,9 @@ from benchmark import OpenMLBenchmark
 timeout = 3600  # in seconds
 run_timeout = 360  # in seconds
 jobs = 4
+dummy = True
+
+res = []
 
 
 def main(bm: OpenMLBenchmark):
@@ -20,12 +24,14 @@ def main(bm: OpenMLBenchmark):
     X_test = SimpleImputer().fit_transform(bm.X_test)
     y_test = bm.y_test
 
-    rf = RandomForestClassifier()
-    rf.fit(X_train, y_train)
+    estimator = DummyClassifier() if dummy else RandomForestClassifier()
+    estimator.fit(X_train, y_train)
 
-    predictions = rf.predict(X_test)
+    predictions = estimator.predict(X_test)
+    score = 1 - sklearn.metrics.accuracy_score(y_test, predictions)
+    res[-1].append(score)
 
-    print('Misclassification rate', 1 - sklearn.metrics.accuracy_score(y_test, predictions))
+    print('Misclassification rate', score)
 
 
 if __name__ == '__main__':
@@ -38,6 +44,7 @@ if __name__ == '__main__':
                 168868, 168908, 168909, 168910, 168911, 168912, 189354, 189355, 189356]
     for task in task_ids:
         print('#######\nStarting task {}\n#######'.format(task))
+        res.append([])
         for i in range(10):
             print('##\nIteration {} at {}\n##'.format(i, datetime.datetime.now().time()))
             try:
@@ -48,3 +55,4 @@ if __name__ == '__main__':
                     raise e
                 traceback.print_exc()
                 print('Misclassification rate', 1)
+    print(res)
