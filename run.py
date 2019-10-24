@@ -2,6 +2,7 @@ import argparse
 import warnings
 from argparse import Namespace
 
+import datetime
 from hpolib.abstract_benchmark import AbstractBenchmark
 
 import benchmark
@@ -15,6 +16,7 @@ def run(persistence: Persistence, b: AbstractBenchmark, idx: int):
     # db.Branin.find({}, {'solvers.incumbents': 0}).pretty()
     # db.Branin.count()
     # { $where: "this.solvers.length == 0" }
+    # db.getCollectionNames().forEach(function(collname) { db[collname].deleteMany({ $where: "this.solvers.length == 0" }) })
 
     config_dict = {
         'n_jobs': 8,
@@ -154,8 +156,9 @@ if __name__ == '__main__':
                     9968, 9970, 9971, 9976, 9977, 9978, 9979, 9980, 9981, 9983, 9985, 9986, 10093, 10101, 14964, 14965,
                     14966, 14969, 14970, 34537, 34539, 125921, 125922, 125923, 146195]
         for task in task_ids:
-            logger.info('Starting OpenML benchmark {}'.format(task))
+            print('#######\nStarting task {}\n#######'.format(task))
             for i in range(10):
+                print('##\nIteration {} at {}\n##'.format(i, datetime.datetime.now().time()))
                 bm = benchmark.OpenMLBenchmark(task)
                 run(persistence, bm, i)
     except (SystemExit, KeyboardInterrupt, Exception) as e:
