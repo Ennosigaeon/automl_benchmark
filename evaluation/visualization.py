@@ -1,3 +1,4 @@
+import itertools
 from typing import List
 
 import matplotlib
@@ -223,6 +224,63 @@ def plot_openml_100(persistence: MongoPersistence):
     ax.set_ylabel('Misclassification Rate')
     ax.legend(loc='upper right')
     plt.savefig('evaluation/plots/openml100.pdf', bbox_inches='tight')
+
+
+def plot_pairwise_performance(x, labels: list):
+    indices = range(len(labels))
+    for i, j in itertools.combinations(indices, 2):
+        print(labels[i], '\t', labels[j])
+        x1 = x[:, i]
+        x2 = x[:, j]
+
+        diff = x1 - x2
+
+        fig, ax = plt.subplots()
+
+        img = ax.scatter(x1, x2, c=diff, cmap='viridis', vmin=-0.5, vmax=0.5)
+        plt.colorbar(img)
+
+        ax.set_axisbelow(True)
+        ax.grid(zorder=-1000)
+
+        ax.autoscale(False)
+        ax.plot([-5, 5], [-5, 5], zorder=-1000, c='#b0b0b0')
+
+        ax.set_xlabel(labels[i])
+        ax.set_ylabel(labels[j])
+
+        plt.savefig('evaluation/plots/comparison-{}-{}.pdf'.format(labels[i], labels[j]), bbox_inches='tight')
+
+
+def plot_overall_performance(x, labels: list, colors: list, cash: bool = False):
+    # Create box plots
+    fig, ax = plt.subplots()
+    fig.set_size_inches(20, 8)
+    fig.set_dpi(250)
+
+    # notch shape box plot
+    bplot = ax.boxplot(np.array(x),
+                       notch=True,  # notch shape
+                       vert=True,  # vertical box alignment
+                       patch_artist=True,  # fill with color
+                       labels=labels)  # will be used to label x-ticks
+
+    if cash:
+        ax.set_title('Performance of CASH Solvers')
+    else:
+        ax.set_title('Performance of AutoML Frameworks')
+
+    for patch, color in zip(bplot['boxes'], colors):
+        patch.set_facecolor(color)
+
+    ax.yaxis.grid(True)
+    ax.set_ylabel('Misclassification Rate')
+    ax.set_ylim([-1, 3])
+
+    if cash:
+        plt.savefig('evaluation/plots/cash-performance.pdf', bbox_inches='tight')
+    else:
+        plt.savefig('evaluation/plots/automl-framworks-performance.pdf', bbox_inches='tight')
 
 
 def plot_branin():
