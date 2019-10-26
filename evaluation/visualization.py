@@ -8,8 +8,6 @@ import numpy as np
 from matplotlib import cm
 
 from adapter.base import BenchmarkResult
-from benchmark import OpenML100Suite, OpenMLBenchmark
-from evaluation.base import MongoPersistence
 
 
 def plot_incumbent_performance(ls: List[BenchmarkResult], n: int = 250):
@@ -164,66 +162,26 @@ def plot_method_overhead(ls: List[BenchmarkResult], line_plot: bool = True):
     plt.savefig('evaluation/plots/{}_overhead.pdf'.format(ls[0].name), bbox_inches='tight')
 
 
-def plot_openml_100(persistence: MongoPersistence):
-    tasks = OpenML100Suite.tasks()
-
+def plot_cash_incumbent(x, labels: list):
     matplotlib.rcParams.update({'font.size': 12})
-
-    ls = {
-        'Random Search': [],
-        'Grid Search': [],
-        'SMAC': [],
-        'hyperopt': [],
-        'BOHB': [],
-        'RoBO': [],
-        'Optunity': [],
-        'BTB': []
-    }
-    ids = []
-    for id in tasks:
-
-        benchmark = OpenMLBenchmark(id, load=False)
-
-        d = {}
-        results = persistence.load_all(benchmark)
-
-        for res in results:
-            valid = any([solver.score < 1 for solver in res.solvers])
-            if valid:
-                ids.append(id)
-
-            for solver in res.solvers:
-
-                y = solver.as_numpy()[1]
-
-                key = solver.algorithm
-                if key == 'RoBo gp':
-                    key = 'RoBO'
-
-                d.setdefault(key, []).append(y)
-
-        for key, value in d.items():
-            for list in value:
-                if np.mean(list) < 1:
-                    ls[key].append(list[0:325])
 
     fig, ax = plt.subplots()
     fig.set_size_inches(20, 8)
     fig.set_dpi(250)
 
-    for key, value in ls.items():
-        y = np.mean(np.vstack(value), axis=0)
-        std = np.std(np.vstack(value), axis=0)
-        print('{}: {:.4f} \\pm {:.4f}'.format(key, y[200], std[200]))
-
-        ax.plot(np.arange(1, len(y) + 1, 1), y, label=key, linewidth=2.0)
+    for idx in range(len(labels)):
+        value = x[idx]
+        mean = value.mean(axis=0)
+        std = value.std(axis=0)
+        ax.plot(np.arange(1, len(mean) + 1, 1), mean, label=labels[idx], linewidth=2.0)
+        # ax.fill_between(np.arange(1, len(mean) + 1, 1), mean - std, mean + std, alpha=0.25)
 
     # ax.set_yscale('log')
     ax.set_xscale('log')
     ax.set_xlabel('Iteration')
-    ax.set_ylabel('Misclassification Rate')
-    ax.legend(loc='upper right')
-    plt.savefig('evaluation/plots/openml100.pdf', bbox_inches='tight')
+    ax.set_ylabel('Normalized Performance')
+    ax.legend(loc='lower right')
+    plt.savefig('evaluation/plots/cash_incumbent.pdf', bbox_inches='tight')
 
 
 def plot_pairwise_performance(x, labels: list):
@@ -278,9 +236,9 @@ def plot_overall_performance(x, labels: list, colors: list, cash: bool = False):
     ax.set_ylim([-1, 3])
 
     if cash:
-        plt.savefig('evaluation/plots/cash-performance.pdf', bbox_inches='tight')
+        plt.savefig('evaluation/plots/performance-cash.pdf', bbox_inches='tight')
     else:
-        plt.savefig('evaluation/plots/automl-framworks-performance.pdf', bbox_inches='tight')
+        plt.savefig('evaluation/plots/performance-automl-framworks.pdf', bbox_inches='tight')
 
 
 def plot_branin():
