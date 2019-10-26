@@ -1,14 +1,13 @@
-from datetime import timedelta
+from collections import OrderedDict
 from typing import List
 
 import numpy as np
 
-import benchmark
 from adapter.base import BenchmarkResult
-from benchmark import OpenML100Suite, OpenMLBenchmark
+from benchmark import OpenMLBenchmark
 from evaluation.base import MongoPersistence
-from evaluation.visualization import plot_incumbent_performance, plot_evaluated_configurations, \
-    plot_evaluation_performance, plot_method_overhead, plot_openml_100, plot_branin, plot_successive_halving
+from evaluation.visualization import plot_cash_incumbent, plot_overall_performance, plot_pairwise_performance, \
+    plot_successive_halving, plot_branin
 
 
 def print_best_incumbent(ls: List[BenchmarkResult], iteration: int = -1):
@@ -204,36 +203,24 @@ def print_automl_framework_results():
 
 
 if __name__ == '__main__':
-    persistence = MongoPersistence('10.0.2.2', db='cash_big2')
-    ls = [benchmark.Levy(), benchmark.Branin(), benchmark.Hartmann6(), benchmark.Rosenbrock10D(), benchmark.Camelback()]
-    bm = benchmark.Branin()
-
     plot_successive_halving()
     plot_branin()
 
     # noinspection PyUnreachableCode
     if False:
-        for b in ls:
+        persistence = MongoPersistence('localhost', db='synthetic')
+        for b in [benchmark.Levy(), benchmark.Branin(), benchmark.Hartmann6(), benchmark.Rosenbrock10D(),
+                  benchmark.Camelback(), benchmark.Rosenbrock20D()]:
             res = persistence.load_all(b)
             print_best_incumbent(res)
             plot_incumbent_performance(res)
             plot_method_overhead(res)
 
-    # noinspection PyUnreachableCode
-    if False:
-        res = persistence.load_single(bm)
-        plot_evaluation_performance(res)
-
-    # noinspection PyUnreachableCode
-    if False:
-        res = persistence.load_all(bm)
+        res = persistence.load_all(benchmark.Branin())
         plot_evaluated_configurations(res)
 
     # noinspection PyUnreachableCode
     if True:
-        print_openml_runtime(persistence)
-        print_automl_framework_results()
-
-    # noinspection PyUnreachableCode
-    if False:
-        plot_openml_100(persistence)
+        persistence = MongoPersistence('localhost', db='benchmarks')
+        print_cash_results(persistence)
+        # print_automl_framework_results()
