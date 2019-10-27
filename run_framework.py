@@ -17,7 +17,7 @@ jobs = 2
 
 if __name__ == '__main__':
     algorithm = sys.argv[1]
-    idx = sys.argv[2] if len(sys.argv) > 2 else None
+    idx = int(sys.argv[2]) if len(sys.argv) > 2 else None
 
     print('Algorithm: ', algorithm)
     print('Timeout: ', timeout)
