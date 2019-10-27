@@ -1,6 +1,7 @@
 import multiprocessing
 import shutil
 import time
+from typing import List
 
 import sklearn.datasets
 import sklearn.metrics
@@ -27,6 +28,11 @@ def get_random_search_object_callback(scenario_dict, seed, ta, backend, metalear
         runhistory=runhistory,
         run_id=seed
     )
+
+
+def skip(id: int) -> bool:
+    failed = [167124]
+    return id in failed
 
 
 def setup():
@@ -79,58 +85,114 @@ def main(bm: OpenMLBenchmark, timeout: int, run_timeout: int, jobs: int, random:
 
     name = bm.get_meta_information()['name']
 
-    X_train = bm.X_train
-    y_train = bm.y_train
-    X_test = bm.X_test
-    y_test = bm.y_test
+    avg_score = 0
+    for fold in bm.folds:
+        setup()
+        X_train, y_train, X_test, y_test = fold
 
-    tmp_folder = '/tmp/autosklearn/{}/tmp'.format(name)
-    output_folder = '/tmp/autosklearn/{}/out'.format(name)
+        tmp_folder = '/tmp/autosklearn/{}/tmp'.format(name)
+        output_folder = '/tmp/autosklearn/{}/out'.format(name)
 
-    seed = int(time.time())
-    ensemble_size = 1 if random else 20
+        seed = int(time.time())
+        ensemble_size = 1 if random else 20
 
-    processes = []
-    spawn_classifier = get_spawn_classifier(X_train, y_train, tmp_folder, output_folder, seed)
-    for i in range(jobs):
-        p = multiprocessing.Process(target=spawn_classifier, args=(seed + i, name))
-        p.start()
-        processes.append(p)
+        processes = []
+        spawn_classifier = get_spawn_classifier(X_train, y_train, tmp_folder, output_folder, seed)
+        for i in range(jobs):
+            p = multiprocessing.Process(target=spawn_classifier, args=(seed + i, name))
+            p.start()
+            processes.append(p)
 
-    start = time.time()
-    while time.time() - start <= 1.05 * timeout:
-        if any(p.is_alive() for p in processes):
-            time.sleep(10)
+        start = time.time()
+        while time.time() - start <= 1.05 * timeout:
+            if any(p.is_alive() for p in processes):
+                time.sleep(10)
+            else:
+                break
         else:
-            break
-    else:
-        print('Grace period exceed. Killing workers.')
-        for p in processes:
-            p.terminate()
-            p.join()
+            print('Grace period exceed. Killing workers.')
+            for p in processes:
+                p.terminate()
+                p.join()
 
-    print('Starting to build an ensemble!')
-    automl = AutoSklearnClassifier(
-        time_left_for_this_task=3600,
-        per_run_time_limit=run_timeout,
-        shared_mode=True,
-        ensemble_size=ensemble_size,
-        tmp_folder=tmp_folder,
-        output_folder=output_folder,
-        initial_configurations_via_metalearning=0,
-        seed=seed,
-        ml_memory_limit=4096
-    )
-    automl.fit_ensemble(
-        y_train,
-        task=MULTICLASS_CLASSIFICATION,
-        metric=accuracy,
-        precision='32',
-        dataset_name=name,
-        ensemble_size=ensemble_size
-    )
+        print('Starting to build an ensemble!')
+        automl = AutoSklearnClassifier(
+            time_left_for_this_task=3600,
+            per_run_time_limit=run_timeout,
+            shared_mode=True,
+            ensemble_size=ensemble_size,
+            tmp_folder=tmp_folder,
+            output_folder=output_folder,
+            initial_configurations_via_metalearning=0,
+            seed=seed,
+            ml_memory_limit=4096
+        )
+        automl.fit_ensemble(
+            y_train,
+            task=MULTICLASS_CLASSIFICATION,
+            metric=accuracy,
+            precision='32',
+            dataset_name=name,
+            ensemble_size=ensemble_size
+        )
 
-    predictions = automl.predict(X_test)
-    print(automl.show_models())
-    score = 1 - sklearn.metrics.accuracy_score(y_test, predictions)
-    return score
+        predictions = automl.predict(X_test)
+        print(automl.show_models())
+        avg_score += 1 - sklearn.metrics.accuracy_score(y_test, predictions)
+    return avg_score / len(bm.folds)
+
+
+# noinspection PyUnresolvedReferences
+def load_pipeline(input: str) -> List[List[str]]:
+    from autosklearn.evaluation.abstract_evaluator import MyDummyClassifier
+    from autosklearn.pipeline.classification import SimpleClassificationPipeline
+    from autosklearn.pipeline.components.classification import ClassifierChoice
+    from autosklearn.pipeline.components.data_preprocessing.rescaling import RescalingChoice
+    from autosklearn.pipeline.components.feature_preprocessing import FeaturePreprocessorChoice
+    from autosklearn.pipeline.components.feature_preprocessing.no_preprocessing import NoPreprocessing
+    from autosklearn.pipeline.components.data_preprocessing.rescaling.none import NoRescalingComponent
+    from autosklearn.pipeline.components.data_preprocessing.one_hot_encoding import OHEChoice
+    from autosklearn.pipeline.components.data_preprocessing.one_hot_encoding.no_encoding import NoEncoding
+
+    res = []
+    try:
+        pipelines: List[Union[SimpleClassificationPipeline, MyDummyClassifier]] = eval(input)
+        for pipeline in pipelines:
+            res.append([])
+            if isinstance(pipeline[1], MyDummyClassifier):
+                res[-1].append(type(pipeline[1]).__name__)
+            else:
+                for s in pipeline[1].steps:
+                    if isinstance(s[1], FeaturePreprocessorChoice) or isinstance(s[1], ClassifierChoice) or \
+                            isinstance(s[1], RescalingChoice) or isinstance(s[1], OHEChoice):
+                        choice = s[1].choice
+                        if isinstance(choice, NoPreprocessing) or isinstance(choice, NoRescalingComponent) or \
+                                isinstance(choice, NoEncoding):
+                            continue
+                        res[-1].append(type(s[1].choice).__name__)
+                    else:
+                        res[-1].append(type(s[1]).__name__)
+
+        for i in range(len(res[-1])):
+            n = res[-1][i]
+
+            if n.endswith('Component'):
+                n = n[:-len('Component')]
+            if n == 'LibLinear_SVC':
+                n = 'LinearSVC'
+            if n == 'LibSVM_SVC':
+                n = 'SVC'
+            if n == 'KNearestNeighborsClassifier':
+                n = 'KNeighborsClassifier'
+            if n == 'RandomForest':
+                n = 'RandomForestClassifier'
+            if n == 'SelectPercentileClassification':
+                n = 'SelectPercentile'
+            if n == 'ExtraTreesPreprocessorClassification':
+                n = 'SelectFromModel'
+
+            res[-1][i] = n
+    except Exception:
+        print(input)
+        raise
+    return res
