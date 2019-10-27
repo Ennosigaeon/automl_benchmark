@@ -19,7 +19,7 @@ def run(persistence: Persistence, b: AbstractBenchmark, idx: int):
     # db.getCollectionNames().forEach(function(collname) { db[collname].deleteMany({ $where: "this.solvers.length == 0" }) })
 
     config_dict = {
-        'n_jobs': 8,
+        'n_jobs': 3,
         'timeout': None,
         'iterations': 325,
         'seed': idx,
@@ -27,11 +27,11 @@ def run(persistence: Persistence, b: AbstractBenchmark, idx: int):
         'random_search': True,
         'grid_search': True,
         'smac': True,
-        'hyperopt': False,  # Only single threaded
+        'hyperopt': True,  # Only single threaded
         'bohb': True,
-        'robo': False,  # Only single threaded
+        'robo': True,  # Only single threaded
         'optunity': True,
-        'btb': False  # Only single threaded
+        'btb': True  # Only single threaded
     }
     config = Namespace(**config_dict)
 
@@ -150,7 +150,7 @@ if __name__ == '__main__':
     try:
         persistence = MongoPersistence(url='localhost', db='foo')
 
-        task_ids = [168337, 168338, 168908, 168909, 168910, 168911, 168912, 189354, 189355]
+        task_ids = [9910, 14952, 14954, 146800, 146817, 146819, 146820, 146824, 167121, 167124, 167125, 167140, 167141]
         for task in task_ids:
             print('#######\nStarting task {}\n#######'.format(task))
             for i in range(10):
