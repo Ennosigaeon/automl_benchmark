@@ -1,10 +1,6 @@
-import datetime
-import itertools
 import random
 import shutil
-import sys
 import tempfile
-import traceback
 
 import h2o
 import numpy as np
@@ -14,12 +10,11 @@ from h2o.automl import H2OAutoML
 
 from benchmark import OpenMLBenchmark
 
-timeout = 3600  # in seconds
-run_timeout = 600  # in seconds
-jobs = 4
 
+def setup():
+    pass
 
-def main(bm: OpenMLBenchmark):
+def main(bm: OpenMLBenchmark, timeout: int, run_timeout: int, jobs: int) -> float:
     try:
         log_dir = tempfile.mkdtemp()
 
@@ -58,42 +53,8 @@ def main(bm: OpenMLBenchmark):
             params[key] = params[key]['actual_value']
 
         print(aml.leader.algo, '(', params, ')')
-        print('Misclassification rate',
-              1 - sklearn.metrics.accuracy_score(y_test, predictions['predict'].as_data_frame()))
+        score = 1 - sklearn.metrics.accuracy_score(y_test, predictions['predict'].as_data_frame())
+        return score
     finally:
         h2o.cluster().shutdown()
         shutil.rmtree(log_dir)
-
-
-if __name__ == '__main__':
-    print('Timeout: ', timeout)
-    print('Run Timeout: ', run_timeout)
-
-    task_ids = [
-        [3, 12, 15, 23, 24, 29, 31, 41, 53, 2079],
-        [3021, 3543, 3560, 3561, 3904, 3917, 3945, 3946, 7592, 7593],
-        [9952, 9955, 9977, 9981, 9985, 10101, 14965, 14967, 14968, 14969],
-        [34539, 125920, 146195, 146212, 146606, 146818, 146821, 146822, 146825, 167119],
-        [167120, 168329, 168330, 168331, 168332, 168335, 168337, 168338, 168868],
-        [168908, 168909, 168910, 168911, 168912, 189354, 189355, 189356]]
-
-    idx = None
-    if len(sys.argv) > 1:
-        idx = int(sys.argv[1])
-        print('Using chunk {}/6'.format(idx))
-        task_ids = task_ids[idx]
-    else:
-        task_ids = list(itertools.chain.from_iterable(task_ids))
-
-    for task in task_ids:
-        print('#######\nStarting task {}\n#######'.format(task))
-        for i in range(10):
-            print('##\nIteration {} at {}\n##'.format(i, datetime.datetime.now().time()))
-            try:
-                bm = OpenMLBenchmark(task)
-                main(bm)
-            except Exception as e:
-                if isinstance(e, KeyboardInterrupt):
-                    raise e
-                traceback.print_exc()
-                print('Misclassification rate', 1)

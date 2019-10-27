@@ -1,21 +1,24 @@
-import datetime
 import os
 import shutil
 import signal
 import subprocess
 import time
-import traceback
 
 import numpy as np
 import pandas as pd
 
 from benchmark import OpenMLBenchmark
 
-timeout = 3600  # in seconds
-jobs = 2
+
+def setup():
+    try:
+        shutil.rmtree('/tmp/atm/')
+    except OSError as e:
+        pass
+    os.mkdir('/tmp/atm/')
 
 
-def main(bm: OpenMLBenchmark):
+def main(bm: OpenMLBenchmark, timeout: int, jobs: int) -> float:
     X_train = bm.X_train
     y_train = bm.y_train
     X_test = bm.X_test
@@ -57,31 +60,8 @@ def main(bm: OpenMLBenchmark):
     proc = subprocess.Popen(cmd, shell=True)
     proc.wait()
 
-
-if __name__ == '__main__':
-    print('Timeout: ', timeout)
-
-    task_ids = [3, 12, 31, 53, 3917, 3945, 7593, 9952, 9977, 9981, 10101, 14965, 34539, 146195, 146212, 146818,
-                146821, 146822, 146825, 167119, 167120, 168329, 168330, 168331, 168332, 168335, 168337, 168338,
-                168868, 168908, 168909, 168910, 168911, 168912, 189354, 189355, 189356]
-    for task in task_ids:
-        print('#######\nStarting task {}\n#######'.format(task))
-        for i in range(10):
-            try:
-                shutil.rmtree('/tmp/atm/')
-            except OSError as e:
-                pass
-            os.mkdir('/tmp/atm/')
-
-            try:
-                print('##\nIteration {} at {}\n##'.format(i, datetime.datetime.now().time()))
-                bm = OpenMLBenchmark(task)
-                main(bm)
-            except Exception as e:
-                if isinstance(e, KeyboardInterrupt):
-                    raise e
-                traceback.print_exc()
-                print('Misclassification rate', 1)
+    # Results are stored in database
+    return 1
 
 ###########
 # Get results via
