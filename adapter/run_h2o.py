@@ -11,8 +11,14 @@ from h2o.automl import H2OAutoML
 from benchmark import OpenMLBenchmark
 
 
+def skip(id: int) -> bool:
+    failed = [167125]
+    return id in failed
+
+
 def setup():
     pass
+
 
 def main(bm: OpenMLBenchmark, timeout: int, run_timeout: int, jobs: int) -> float:
     try:

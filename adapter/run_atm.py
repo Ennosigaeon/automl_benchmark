@@ -10,6 +10,11 @@ import pandas as pd
 from benchmark import OpenMLBenchmark
 
 
+def skip(id: int) -> bool:
+    failed = []
+    return id in failed
+
+
 def setup():
     try:
         shutil.rmtree('/tmp/atm/')
