@@ -189,7 +189,7 @@ if __name__ == '__main__':
     try:
         persistence = MongoPersistence(url='localhost', db='foo')
 
-        task_ids = [9910, 14952, 14954, 146800, 146817, 146819, 146820, 146824, 167121, 167124, 167125, 167140, 167141]
+        task_ids = [9910, 14952, 146817, 146819, 146820, 146824, 167121, 167124, 167125, 167140, 167141]
         for task in task_ids:
             print('#######\nStarting task {}\n#######'.format(task))
             for i in range(10):
