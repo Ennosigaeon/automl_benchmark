@@ -191,9 +191,9 @@ if __name__ == '__main__':
 
         task_ids = [9910, 14952, 146817, 146819, 146820, 146824, 167121, 167124, 167125, 167140, 167141]
         for task in task_ids:
-            print('#######\nStarting task {}\n#######'.format(task))
+            logger.info('#######\nStarting task {}\n#######'.format(task))
             for i in range(10):
-                print('##\nIteration {} at {}\n##'.format(i, datetime.datetime.now().time()))
+                logger.info('##\nIteration {} at {}\n##'.format(i, datetime.datetime.now().time()))
                 bm = benchmark.OpenMLBenchmark(task)
                 run(persistence, bm, i)
     except (SystemExit, KeyboardInterrupt, Exception) as e:
