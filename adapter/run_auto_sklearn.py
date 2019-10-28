@@ -29,6 +29,11 @@ def get_random_search_object_callback(scenario_dict, seed, ta, backend, metalear
     )
 
 
+def skip(id: int) -> bool:
+    failed = [167124]
+    return id in failed
+
+
 def setup():
     try:
         shutil.rmtree('/tmp/autosklearn/')

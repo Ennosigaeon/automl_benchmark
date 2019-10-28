@@ -50,27 +50,51 @@ if __name__ == '__main__':
                     warnings.simplefilter("ignore", category=RuntimeWarning)
 
                     if algorithm == 'atm':
+                        if run_atm.skip(task):
+                            continue
+
                         run_atm.setup()
                         score = run_atm.main(bm, timeout, jobs)
                     if algorithm == 'random':
+                        if run_auto_sklearn.skip(task):
+                            continue
+
                         run_auto_sklearn.setup()
                         score = run_auto_sklearn.main(bm, timeout, run_timeout, jobs, random=True)
                     elif algorithm == 'auto-sklearn':
+                        if run_auto_sklearn.skip(task):
+                            continue
+
                         run_auto_sklearn.setup()
                         score = run_auto_sklearn.main(bm, timeout, run_timeout, jobs, random=False)
                     elif algorithm == 'dummy':
+                        if run_baseline.skip(task):
+                            continue
+
                         run_baseline.setup()
                         score = run_baseline.main(bm, dummy=True)
                     elif algorithm == 'rf':
+                        if run_baseline.skip(task):
+                            continue
+
                         run_baseline.setup()
                         score = run_baseline.main(bm, dummy=False)
                     elif algorithm == 'h2o':
+                        if run_h2o.skip(task):
+                            continue
+
                         run_h2o.setup()
                         score = run_h2o.main(bm, timeout, run_timeout, jobs)
                     elif algorithm == 'hpsklearn':
+                        if run_hpsklearn.skip(task):
+                            continue
+
                         run_hpsklearn.setup()
                         score = run_hpsklearn.main(bm, timeout, run_timeout)
                     elif algorithm == 'tpot':
+                        if run_tpot.skip(task):
+                            continue
+
                         run_tpot.setup()
                         score = run_tpot.main(bm, timeout, run_timeout, jobs)
                     else:
@@ -85,4 +109,5 @@ if __name__ == '__main__':
                     raise e
                 traceback.print_exc()
                 print('Misclassification rate', 1)
+        print(res[-1])
     print(res)

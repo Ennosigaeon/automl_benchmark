@@ -3,6 +3,11 @@ from tpot import TPOTClassifier
 from benchmark import OpenMLBenchmark
 
 
+def skip(id: int) -> bool:
+    failed = [167124, 146819]
+    return id in failed
+
+
 def setup():
     pass
 
