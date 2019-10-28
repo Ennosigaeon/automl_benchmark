@@ -1,7 +1,7 @@
 import abc
 import time
 import traceback
-from typing import List, Union
+from typing import List, Union, Optional
 
 import numpy as np
 from hpolib.abstract_benchmark import AbstractBenchmark
@@ -168,6 +168,12 @@ class BenchmarkResult:
 
     def add_result(self, stats: OptimizationStatistic):
         self.solvers.append(stats)
+
+    def get_result(self, algorithm: str) -> Optional[OptimizationStatistic]:
+        for solver in self.solvers:
+            if solver.algorithm == algorithm:
+                return solver
+        return None
 
     @property
     def name(self):
