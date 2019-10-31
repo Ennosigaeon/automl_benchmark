@@ -13,7 +13,7 @@ from benchmark import OpenMLBenchmark
 
 timeout = 3600  # in seconds
 run_timeout = 600  # in seconds
-jobs = 2
+jobs = 4
 
 if __name__ == '__main__':
     algorithm = sys.argv[1]
@@ -24,9 +24,10 @@ if __name__ == '__main__':
     print('Run Timeout: ', run_timeout)
 
     task_ids = [
-        [9910, 14952, 14954, 146800, 146817],
-        [146819, 146820, 146824, 167121],
-        [167124, 167125, 167140, 167141]
+        [3, 12, 31, 53, 3917, 7593, 9952, 9977, 9981, 10101],
+        [14965, 34539, 146195, 146212, 146818, 146821, 146822, 146825, 167119, 167120],
+        [167121, 167124, 168329, 168330, 168331, 168332, 168335, 168337, 168338],
+        [168868, 168908, 168909, 168910, 168911, 168912, 189354, 189355, 189356],
     ]
 
     if idx is not None:
@@ -40,7 +41,7 @@ if __name__ == '__main__':
     for task in task_ids:
         print('#######\nStarting task {}\n#######'.format(task))
         res.append([])
-        for i in range(10):
+        for i in range(5):
             try:
                 print('##\nIteration {} at {}\n##'.format(i, datetime.datetime.now().time()))
                 start = time.time()
