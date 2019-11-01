@@ -4,7 +4,7 @@ from benchmark import OpenMLBenchmark
 
 
 def skip(id: int) -> bool:
-    failed = [9910, 14952, 14954, 167124, 146819]
+    failed = []
     return id in failed
 
 
