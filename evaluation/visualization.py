@@ -1,5 +1,6 @@
 import itertools
-from typing import List
+import pickle
+from typing import List, Dict
 
 import matplotlib
 import matplotlib.colors as colors
@@ -8,54 +9,7 @@ import numpy as np
 from matplotlib import cm
 
 from adapter.base import BenchmarkResult
-
-
-def plot_incumbent_performance(ls: List[BenchmarkResult], n: int = 250):
-    benchmark = ls[0].benchmark
-    matplotlib.rcParams.update({'font.size': 12})
-
-    fig, ax = plt.subplots()
-    fig.set_size_inches(16, 9)
-    fig.set_dpi(250)
-
-    solvers = {}
-    for res in ls:
-        for solver in res.solvers:
-            x, y = solver.as_numpy(incumbent=True, x_axis='iterations')
-            label = solver.algorithm
-            if label == 'RoBo gp':
-                label = 'RoBO'
-            solvers.setdefault(label, []).append(y[:n])
-
-    f_opt = benchmark.get_meta_information()['f_opt']
-    ax.plot([1, len(next(iter(solvers.values()))[0]) + 1], [f_opt, f_opt], 'k', label='Optimum', linewidth=2)
-
-    for name, values in solvers.items():
-        y = np.vstack(values)
-        mean = np.mean(y, axis=0)
-        std = np.std(y, axis=0)
-
-        ax.fill_between(np.arange(1, n + 1, 1), mean - std, mean + std, alpha=0.25)
-        ax.plot(np.arange(1, n + 1, 1), mean, label=name, linewidth=2)
-
-    # Fixes for skewed plots
-    if ls[0].name == 'Branin':
-        ax.set_ylim(-10, 90)
-    if ls[0].name == 'Rosenbrock10D':
-        ax.set_ylim(-10, 270)
-    if ls[0].name == 'Camelback':
-        # ax.set_yscale('log')
-        ax.set_ylim(0, 2000)
-
-    ax.set_xscale('log')
-    ax.legend(loc='upper right')
-    ax.set_title(ls[0].name)
-    ax.set_xlabel('Iteration')
-    ax.set_ylabel('$f(\\lambda)$')
-
-    plt.savefig('evaluation/plots/{}_aggregated.pdf'.format(ls[0].name), bbox_inches='tight')
-    # fig.show()
-    # plt.show()
+from evaluation.scripts import Dataset
 
 
 def plot_evaluated_configurations(ls: List[BenchmarkResult]):
@@ -181,22 +135,25 @@ def plot_cash_incumbent(x, labels: list):
     ax.set_xlabel('Iteration')
     ax.set_ylabel('Normalized Performance')
     ax.legend(loc='lower right')
-    plt.savefig('evaluation/plots/cash_incumbent.pdf', bbox_inches='tight')
+    plt.savefig('evaluation/plots/cash-incumbent.pdf', bbox_inches='tight')
 
 
-def plot_pairwise_performance(x, labels: list):
+def plot_pairwise_performance(x, labels: list, cash: bool = False):
     indices = range(len(labels))
     for i, j in itertools.combinations(indices, 2):
         print(labels[i], '\t', labels[j])
-        x1 = x[:, i]
-        x2 = x[:, j]
 
-        diff = x1 - x2
+        # Ignore failed data sets
+        mask = np.logical_and(x[:, i] != 0, x[:, j] != 0)
+        x1 = x[mask, i]
+        x2 = x[mask, j]
+
+        diff = abs(x1 - x2)
 
         fig, ax = plt.subplots()
 
         img = ax.scatter(x1, x2, c=diff, cmap='viridis', vmin=-0.5, vmax=0.5)
-        plt.colorbar(img)
+        # plt.colorbar(img)
 
         ax.set_axisbelow(True)
         ax.grid(zorder=-1000)
@@ -207,17 +164,78 @@ def plot_pairwise_performance(x, labels: list):
         ax.set_xlabel(labels[i])
         ax.set_ylabel(labels[j])
 
-        plt.savefig('evaluation/plots/comparison-{}-{}.pdf'.format(labels[i], labels[j]), bbox_inches='tight')
+        lower = min(np.min(x1), np.min(x2)) - 0.05
+        upper = max(max(np.max(x1), np.max(x2)), 1.05)
+
+        ax.set_xlim([lower, upper])
+        ax.set_ylim([lower, upper])
+
+        prefix = 'cash' if cash else 'frameworks'
+        plt.savefig('evaluation/plots/comparison-{}-{}-{}.pdf'.format(prefix,
+                                                                      labels[i].replace(' ', ''),
+                                                                      labels[j].replace(' ', '')),
+                    bbox_inches='tight')
 
 
-def plot_overall_performance(x, labels: list, colors: list, cash: bool = False):
+def plot_dataset_performance(values, labels: list, tasks: list, cash: bool = False):
+    with open('assets/ds.pkl', 'rb') as f:
+        datasets: Dict[int, Dataset] = pickle.load(f)
+
+    ds_by_classes = {}
+    ds_by_features = {}
+    ds_by_instances = {}
+    ds_by_missing = {}
+
+    for ds in datasets.values():
+        if ds.task_id not in tasks:
+            continue
+
+        idx = tasks.index(ds.task_id)
+
+        ds_by_classes.setdefault(ds.NumberOfClasses, []).append(idx)
+        ds_by_features.setdefault(ds.NumberOfSymbolicFeatures + ds.NumberOfNumericFeatures, []).append(idx)
+        ds_by_instances.setdefault(ds.NumberOfInstances, []).append(idx)
+
+        p = round(ds.NumberOfMissingValues / (
+                ds.NumberOfInstances * (ds.NumberOfNumericFeatures + ds.NumberOfSymbolicFeatures)), 6)
+        ds_by_missing.setdefault(p, []).append(idx)
+
+    def plot(mapping: Dict[int, List[int]], title: str, max: int = None):
+        tmp = sorted(mapping.keys())
+        idx = tmp.index(max) if max is not None else len(tmp)
+
+        x = np.array(tmp[:idx])
+        y = []
+        for v in x:
+            tmp = values[mapping[v], :].mean(axis=0)
+            y.append(tmp)
+        y = np.array(y)
+
+        fig, ax = plt.subplots()
+        for i in range(len(labels)):
+            ax.plot(x, y[:, i], label=labels[i])
+        ax.legend()
+        ax.set_title(title)
+        fig.show()
+
+    plot(ds_by_classes, 'Number of Classes', max=26)
+    plot(ds_by_features, 'Number of Features', max=2001)
+    plot(ds_by_instances, 'Number of Samples', max=14980)
+    plot(ds_by_missing, 'Percentage Missing Values')
+
+
+def plot_overall_performance(x, labels: list, cash: bool = False):
     # Create box plots
     fig, ax = plt.subplots()
     fig.set_size_inches(20, 8)
     fig.set_dpi(250)
 
+    values = []
+    for i in range(x.shape[1]):
+        values.append(x[x[:, i] > 0, i])
+
     # notch shape box plot
-    bplot = ax.boxplot(np.array(x),
+    bplot = ax.boxplot(values,
                        notch=True,  # notch shape
                        vert=True,  # vertical box alignment
                        patch_artist=True,  # fill with color
@@ -228,16 +246,17 @@ def plot_overall_performance(x, labels: list, colors: list, cash: bool = False):
     else:
         ax.set_title('Performance of AutoML Frameworks')
 
-    for patch, color in zip(bplot['boxes'], colors):
-        patch.set_facecolor(color)
+    # for patch, color in zip(bplot['boxes'], colors):
+    #     patch.set_facecolor(color)
 
     ax.yaxis.grid(True)
     ax.set_ylabel('Misclassification Rate')
-    ax.set_ylim([-1, 3])
 
     if cash:
+        ax.set_ylim([None, 2.0])
         plt.savefig('evaluation/plots/performance-cash.pdf', bbox_inches='tight')
     else:
+        ax.set_ylim([None, 2.5])
         plt.savefig('evaluation/plots/performance-automl-framworks.pdf', bbox_inches='tight')
 
 
@@ -262,6 +281,7 @@ def plot_branin():
     Z = (Y - (5.1 / (4 * np.pi ** 2)) * X ** 2 + 5 * X / np.pi - 6) ** 2
     Z += 10 * (1 - 1 / (8 * np.pi)) * np.cos(X) + 10
 
+    # noinspection PyUnresolvedReferences
     ax.plot_surface(X, Y, Z, cmap=cm.coolwarm, linewidth=0.01, edgecolors='k', antialiased=True)
 
     ax.view_init(30, 120)
