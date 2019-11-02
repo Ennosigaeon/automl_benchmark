@@ -111,4 +111,8 @@ if __name__ == '__main__':
                 traceback.print_exc()
                 print('Misclassification rate', 1)
         print(res[-1])
+
+    for i in range(len(res)):
+        print('        {},  # {}'.format(res[i], task_ids[i]))
+
     print(res)
