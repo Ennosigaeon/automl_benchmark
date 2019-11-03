@@ -177,51 +177,82 @@ def plot_pairwise_performance(x, labels: list, cash: bool = False):
                     bbox_inches='tight')
 
 
-def plot_dataset_performance(values, labels: list, tasks: list, cash: bool = False):
+def plot_dataset_performance(values, minimum, maximum, labels: list, tasks: list, rows: int = 20, cash: bool = False):
     with open('assets/ds.pkl', 'rb') as f:
         datasets: Dict[int, Dataset] = pickle.load(f)
 
-    ds_by_classes = {}
-    ds_by_features = {}
-    ds_by_instances = {}
-    ds_by_missing = {}
+    a4_size = (8.27, 11.69)
 
-    for ds in datasets.values():
-        if ds.task_id not in tasks:
-            continue
+    normalized = []
+    for i in range(len(tasks)):
+        normalized.append([])
+        for j in range(len(values)):
+            normalized[-1].append([])
 
-        idx = tasks.index(ds.task_id)
+    # normalized = [[[]] * len(values)] * len(tasks)
+    for idx, algo in enumerate(values):
+        for idx2, ds in enumerate(algo):
+            for sample in ds:
+                if sample != 1:
+                    # v = ((1 - sample) - minimum[idx2]) / (maximum[idx2] - minimum[idx2])
+                    v = 1 - sample
+                    normalized[idx2][idx].append(v)
 
-        ds_by_classes.setdefault(ds.NumberOfClasses, []).append(idx)
-        ds_by_features.setdefault(ds.NumberOfSymbolicFeatures + ds.NumberOfNumericFeatures, []).append(idx)
-        ds_by_instances.setdefault(ds.NumberOfInstances, []).append(idx)
+    std = np.zeros(len(normalized))
+    for idx in range(len(normalized)):
+        start = 1 if cash else 0
+        std[idx] = np.array([item for sublist in normalized[idx][start:] for item in sublist]).std()
 
-        p = round(ds.NumberOfMissingValues / (
-                ds.NumberOfInstances * (ds.NumberOfNumericFeatures + ds.NumberOfSymbolicFeatures)), 6)
-        ds_by_missing.setdefault(p, []).append(idx)
+    plot_idx = std.argsort()[-(rows * 2):]
 
-    def plot(mapping: Dict[int, List[int]], title: str, max: int = None):
-        tmp = sorted(mapping.keys())
-        idx = tmp.index(max) if max is not None else len(tmp)
+    fig, axes = plt.subplots(1, 2, gridspec_kw={'wspace': 0.01, 'hspace': 0})
+    fig.set_size_inches(a4_size)
+    for i in range(2):
+        axes[i].set_frame_on(False)
+        axes[i].grid(True, linewidth=0.5, alpha=0.75)
+        axes[i].set_axisbelow(True)
+        axes[i].set_yticks(np.arange(rows))
+        axes[i].tick_params(axis=u'both', which=u'both', length=0)
+        axes[i].set_yticklabels([datasets[tasks[idx]].name[:15] for idx in plot_idx[i * rows: (i + 1) * rows]])
+        axes[i].set_ylim([-0.5, rows - 0.5])
+        axes[i].tick_params(axis='both', which='major', labelsize=6)
+    axes[1].yaxis.tick_right()
+    print(sorted([datasets[tasks[idx]].task_id for idx in plot_idx]))
 
-        x = np.array(tmp[:idx])
-        y = []
-        for v in x:
-            tmp = values[mapping[v], :].mean(axis=0)
-            y.append(tmp)
-        y = np.array(y)
+    for idx in range(len(values)):
+        mean = [[], []]
+        mean_y = [[], []]
+        x = [[], []]
+        y = [[], []]
+        for i, idx2 in enumerate(plot_idx):
+            idx3 = i % 2
 
-        fig, ax = plt.subplots()
-        for i in range(len(labels)):
-            ax.plot(x, y[:, i], label=labels[i])
-        ax.legend()
-        ax.set_title(title)
-        fig.show()
+            mean[idx3].append(np.array(normalized[idx2][idx]).mean())
+            x[idx3] += normalized[idx2][idx]
 
-    plot(ds_by_classes, 'Number of Classes', max=26)
-    plot(ds_by_features, 'Number of Features', max=2001)
-    plot(ds_by_instances, 'Number of Samples', max=14980)
-    plot(ds_by_missing, 'Percentage Missing Values')
+            y_val = i // 2 + (len(values) / rows) - 0.05 - 0.1 * idx
+            mean_y[idx3].append(y_val)
+            y[idx3] += [y_val] * len(normalized[idx2][idx])
+
+        for i in range(2):
+            # noinspection PyProtectedMember
+            color = next(axes[i]._get_lines.prop_cycler)
+            label = None if i == 1 else labels[idx]
+            axes[i].scatter(x[i], y[i], s=(matplotlib.rcParams['lines.markersize'] ** 2) * 0.33, alpha=0.33,
+                            linewidths=0, **color)
+            axes[i].scatter(mean[i], mean_y[i], marker='d', s=(matplotlib.rcParams['lines.markersize'] ** 2) * 0.5,
+                            label=label, **color)
+
+    handles, labels_txt = axes[0].get_legend_handles_labels()
+
+    fig.subplots_adjust(bottom=0.033)
+    fig.legend(handles, labels_txt, ncol=len(labels) // 2, loc='lower center', borderaxespad=0.1,
+               fontsize=6)
+
+    if cash:
+        plt.savefig('evaluation/plots/performance-ds-cash.pdf', bbox_inches='tight')
+    else:
+        plt.savefig('evaluation/plots/performance-ds-frameworks.pdf', bbox_inches='tight')
 
 
 def plot_overall_performance(x, labels: list, cash: bool = False):
