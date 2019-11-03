@@ -38,6 +38,7 @@ def print_cash_results(persistence: MongoPersistence):
     datasets = tasks
 
     # Skip first parallel iteration
+    last_iteration = 25
     offset = 1
     iterations = 325 - offset
 
@@ -297,9 +298,10 @@ def print_cash_results(persistence: MongoPersistence):
         results = persistence.load_all(bm)
         for res in results:
             for solver in res.solvers:
-                d.setdefault(solver.algorithm, []).append(1 - solver.score)
-                inc.setdefault(solver.algorithm, []).append(solver.as_numpy()[1][offset:iterations + offset])
-                assert np.isclose(solver.as_numpy()[1][-1], solver.score)
+                tmp = solver.as_numpy()[1]
+                d.setdefault(solver.algorithm, []).append(1 - tmp[last_iteration])
+                inc.setdefault(solver.algorithm, []).append(tmp[offset:iterations + offset])
+                assert np.isclose(tmp[-1], solver.score)
 
         if len(d.keys()) == 0:
             print('{}: No data!'.format(task))
@@ -1021,8 +1023,8 @@ def print_automl_framework_results():
     assert len(datasets) == len(auto_sklearn) == len(tpot) == len(atm) == len(hpsklearn) == len(random) == len(h2o) == \
            len(rf_baseline) == len(dummy_baseline)
 
-    labels = ['Random Forest', 'Dummy', 'Random Search', 'auto-sklearn', 'TPOT', 'ATM', 'hyperopt-sklearn', 'H2O']
-    results = [rf_baseline, dummy_baseline, random, auto_sklearn, tpot, atm, hpsklearn, h2o]
+    labels = ['Dummy', 'Random Forest', 'Random Search', 'auto-sklearn', 'TPOT', 'ATM', 'hyperopt-sklearn', 'H2O']
+    results = [dummy_baseline, rf_baseline, random, auto_sklearn, tpot, atm, hpsklearn, h2o]
 
     average = []
 
@@ -1070,8 +1072,8 @@ def print_automl_framework_results():
             print('\t&\t', end='')
     print('\n\n\n')
 
-    maximum = average[:, 0]
-    minimum = average[:, 1]
+    minimum = average[:, 0]
+    maximum = average[:, 1]
     normalized = np.apply_along_axis(lambda x: (x - minimum) / (maximum - minimum), 0, average)
 
     plot_overall_performance(normalized[:, 2:], labels[2:], cash=False)
