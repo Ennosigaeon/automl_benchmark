@@ -281,14 +281,14 @@ def print_cash_results(persistence: MongoPersistence):
     maximum = 1 - np.array(rf_baseline).mean(axis=1)
 
     ls = OrderedDict()
-    ls['Grid Search'] = [[], [], []]
-    ls['Random Search'] = [[], [], []]
-    ls['SMAC'] = [[], [], []]
-    ls['BOHB'] = [[], [], []]
-    ls['Optunity'] = [[], [], []]
-    ls['hyperopt'] = [[], [], []]
-    ls['RoBo gp'] = [[], [], []]
-    ls['BTB'] = [[], [], []]
+    ls['Grid Search'] = [[], [], [], []]
+    ls['Random Search'] = [[], [], [], []]
+    ls['SMAC'] = [[], [], [], []]
+    ls['BOHB'] = [[], [], [], []]
+    ls['Optunity'] = [[], [], [], []]
+    ls['hyperopt'] = [[], [], [], []]
+    ls['RoBo gp'] = [[], [], [], []]
+    ls['BTB'] = [[], [], [], []]
 
     for idx, task in enumerate(tasks):
         bm = OpenMLBenchmark(task, load=False)
@@ -320,7 +320,7 @@ def print_cash_results(persistence: MongoPersistence):
             ls[key][0].append(x.mean())
             ls[key][1].append(x.std())
             ls[key][2].append(np.array(inc[key]).mean(axis=0))
-            # ls[key][2].append(np.array(inc[key]))
+            ls[key][3].append([1 - v for v in value])
 
     # Print raw results
     print('#####\nRaw CASH Framework Results\n#####')
@@ -377,6 +377,8 @@ def print_cash_results(persistence: MongoPersistence):
             print('\t&\t', end='')
     print('\n\n\n')
 
+    results = [v[3] for v in ls.values()]
+
     # Normalize values. Use precision to have higher value => better result
     max_tile = np.tile(maximum, (iterations, 1)).T
     min_tile = np.tile(minimum, (iterations, 1)).T
@@ -395,12 +397,11 @@ def print_cash_results(persistence: MongoPersistence):
     normalized = np.array(normalized)
     incumbents = np.array(incumbents)
     plot_cash_incumbent(incumbents, list(labels))
-    # plot_dataset_performance(average.T, list(labels), tasks, cash=False)
-    # Remove baseline mehtods and grid search
     plot_pairwise_performance(average[:, 3:], list(labels)[1:], cash=True)
     plot_overall_performance(normalized.T, list(labels), cash=True,
                              # colors=['b', 'g', 'r', 'c', 'm', 'pink', 'lawngreen']
                              )
+    plot_dataset_performance(results, minimum, maximum, list(labels), tasks, cash=True)
 
 
 def print_automl_framework_results():
@@ -1076,6 +1077,7 @@ def print_automl_framework_results():
     maximum = average[:, 1]
     normalized = np.apply_along_axis(lambda x: (x - minimum) / (maximum - minimum), 0, average)
 
+    plot_dataset_performance(results[2:], minimum, maximum, list(labels[2:]), tasks, cash=False)
     plot_overall_performance(normalized[:, 2:], labels[2:], cash=False)
     plot_pairwise_performance(average[:, 2:], labels[2:], cash=False)
 
