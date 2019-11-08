@@ -1,8 +1,12 @@
 import abc
-import math
+import collections
+import copy
+import json
 from abc import ABC, abstractmethod
 from importlib import import_module
+from typing import Dict
 
+import math
 import numpy as np
 import scipy.stats
 from ConfigSpace import ConfigurationSpace
@@ -24,6 +28,9 @@ class BaseConverter(ABC):
     @abstractmethod
     def convert_single(self, config: MetaConfig) -> object:
         pass
+
+    def inverse(self, config: Dict, config_space: MetaConfigCollection) -> Dict:
+        return copy.deepcopy(config)
 
 
 class NoopConverter(BaseConverter):
@@ -90,6 +97,16 @@ class ConfigSpaceConverter(BaseConverter):
                     InCondition(child=cs.get_hyperparameter(name),
                                 parent=cs.get_hyperparameter(entry.condition[PARENT]), values=entry.condition[VALUE]))
         return cs
+
+    def inverse(self, config: Dict, config_space: MetaConfigCollection) -> Dict:
+        algorithm = config['__choice__']
+
+        d = {'algorithm': algorithm}
+        for key, value in config.items():
+            if key == '__choice__':
+                continue
+            d[key.split(':')[1]] = value
+        return d
 
 
 class TpotConverter(BaseConverter):
@@ -195,6 +212,36 @@ class HyperoptConverter(BaseConverter):
         module = import_module(module_name)
         class_ = getattr(module, class_name)
         return class_(*args, **kwargs)
+
+    def inverse(self, config: Dict, config_space: MetaConfigCollection) -> Dict:
+        algorithm = list(config_space.algos.keys())[config['estimator_type']]
+        d = {'algorithm': algorithm}
+        definition = config_space.algos[algorithm]
+        conditional = None
+
+        for key, value in config.items():
+            if key == 'estimator_type':
+                continue
+
+            k = key[7 + len(algorithm):]
+            if len(k) == 0:
+                continue
+
+            if k.startswith('__'):
+                k = k[2:]
+            else:
+                if conditional is None:
+                    ls = [hyper.condition['parent'] for hyper in definition.dict.values() if hyper.has_condition()]
+                    if len(set(ls)) != 1:
+                        raise ValueError('ConfigSpaces with multiple conditional hyperparameters are not supported')
+                    conditional = k[1:].split('_')[0]
+                    d[ls[0]] = conditional
+                k = k[1 + len(conditional) + 1:]
+
+            if definition.dict[k].type == CATEGORICAL:
+                value = definition.dict[k].choices[value]
+            d[k] = value
+        return d
 
 
 class BtbConverter(BaseConverter):
@@ -340,6 +387,24 @@ class RoBoConverter(BaseConverter):
 
         return np.array(lower), np.array(upper), names
 
+    def inverse(self, config: Dict, config_space: MetaConfigCollection) -> Dict:
+        d = {}
+        for key, hyper in config_space.items():
+            if hyper.dict.keys() == config.keys():
+                d['algorithm'] = key
+                for key2, meta in hyper.items():
+                    if meta.type == CATEGORICAL:
+                        value = meta.choices[round(config[key2])]
+                    elif meta.type == UNI_INT:
+                        value = round(config[key2])
+                    else:
+                        value = config[key2]
+                    d[key2] = value
+                break
+        else:
+            raise ValueError('Unable to determine algorithm: {}'.format(str(config)))
+        return d
+
 
 class GPyOptConverter(BaseConverter):
     def convert(self, config: MetaConfigCollection) -> object:
@@ -432,3 +497,15 @@ class OptunityConverter(BaseConverter):
                 d[parameter] = tmp
 
         return d
+
+
+CONVERTER_MAPPING = {
+    'Random Search': RandomSearchConverter(),
+    'Grid Search': GridSearchConverter(),
+    'SMAC': ConfigSpaceConverter(),
+    'hyperopt': HyperoptConverter(),
+    'BOHB': ConfigSpaceConverter(),
+    'RoBo gp': RoBoConverter(),
+    'Optunity': OptunityConverter(),
+    'BTB': BtbConverter()
+}

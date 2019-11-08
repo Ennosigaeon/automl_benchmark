@@ -2,11 +2,13 @@ import itertools
 import pickle
 from typing import List, Dict
 
+import math
 import matplotlib
 import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib import cm
+import operator
+from matplotlib import cm, patches
 
 from adapter.base import BenchmarkResult
 from evaluation.scripts import Dataset
@@ -288,7 +290,100 @@ def plot_overall_performance(x, labels: list, cash: bool = False):
         plt.savefig('evaluation/plots/performance-cash.pdf', bbox_inches='tight')
     else:
         ax.set_ylim([None, 2.5])
-        plt.savefig('evaluation/plots/performance-automl-framworks.pdf', bbox_inches='tight')
+        plt.savefig('evaluation/plots/performance-automl-frameworks.pdf', bbox_inches='tight')
+
+
+def plot_configuration_similarity(dicts: list, cash: bool = False):
+    def flatten(l):
+        return [item for sublist in l for item in sublist]
+
+    algorithms = set()
+    for dic in dicts:
+        algorithms.update(flatten([i.keys() for i in dic[1].values()]))
+    colours = iter(cm.jet(np.linspace(0, 1, len(algorithms))))
+    colours = {k: v for k, v in zip(algorithms, colours)}
+    base_size = (matplotlib.rcParams['lines.markersize'] ** 2) * 0.33
+
+    def scatter(ax, dict, title):
+        values = {}
+        for task, d in dict.items():
+            for algo, v in d.items():
+                if algo not in values:
+                    values[algo] = []
+                values[algo] += v
+
+        rect = patches.Rectangle((4.95, 0.725), 5.3, 0.325, edgecolor='lightgray', facecolor='lightgray', alpha=0.5)
+        ax.add_patch(rect)
+
+        for algo, array in values.items():
+            tmp = np.array(array)
+            x = tmp[:, 0]
+            x[x > 10] = 10
+            y = tmp[:, 1]
+            s = tmp[:, 2] * base_size
+
+            ax.scatter(x, y, label=algo.split('.')[-1], alpha=1, linewidths=0, s=s, c=[colours[algo]])
+
+        ax.set_ylim([0, 1.05])
+        ax.set_xlim([-0.25, 10.25])
+        ax.set_title(title, fontsize=6, pad=2)
+        ax.set_xlabel('Instances per Cluster', fontsize=6, labelpad=1)
+        ax.set_ylabel('Silhouette Coefficient', fontsize=6, labelpad=1)
+        ax.tick_params(axis='both', which='major', labelsize=4)
+        ax.tick_params(axis='both', which='minor', labelsize=4)
+
+    rows = max(1, math.ceil(len(dicts) / 3))
+    fig, axes = plt.subplots(rows, 3 if len(dicts) > 1 else 1)
+
+    if len(dicts) == 1:
+        axes = [axes]
+    axes = flatten(axes)
+
+    handles = []
+    labels = []
+    for i, dict in enumerate(dicts):
+        scatter(axes[i], dict[1], dict[0])
+        h, l = axes[i].get_legend_handles_labels()
+        for i in range(len(h)):
+            try:
+                labels.index(l[i])
+            except ValueError:
+                handles.append(h[i])
+                labels.append(l[i])
+
+    fig.delaxes(axes[-1])
+
+    suffix = 'Classifier'
+    labels = [s[:-len(suffix)] if s.endswith(suffix) else s for s in labels]
+    for i in range(len(labels)):
+        if labels[i] == 'LinearDiscriminantAnalysis':
+            labels[i] = 'LDA'
+        if labels[i] == 'QuadraticDiscriminantAnalysis':
+            labels[i] = 'QDA'
+
+    hl = sorted(zip(handles, labels), key=operator.itemgetter(1))
+    handles, labels = zip(*hl)
+    leg = fig.legend(handles, labels, ncol=2, bbox_to_anchor=(0.995, 0.26), columnspacing=1, borderaxespad=0.1,
+                     fontsize=6, scatterpoints=1, handletextpad=0.33)
+    for handle in leg.legendHandles:
+        handle.set_sizes([8.0])
+
+    handles2 = []
+    labels2 = []
+    for i in np.arange(0.25, 2.1, 0.5):
+        labels2.append(i)
+        handles2.append(plt.scatter([], [], s=i * base_size, edgecolors='none', c='b'))
+    fig.legend(handles2, labels2, ncol=len(labels2), bbox_to_anchor=(0.995, 0.30), columnspacing=1.2, borderaxespad=0.1,
+               fontsize=6)
+    fig.text(0.68, 0.31, 'Normalized Accuracy', fontsize=6)
+
+    fig.tight_layout()
+    fig.subplots_adjust(hspace=0.3, left=0.05, right=0.99, bottom=0.06, top=0.98)
+
+    if cash:
+        plt.savefig('evaluation/plots/config-similarity-cash.pdf')
+    else:
+        plt.savefig('evaluation/plots/config-similarity-frameworks.pdf')
 
 
 def plot_branin():

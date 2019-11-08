@@ -1,14 +1,20 @@
-from collections import OrderedDict
-from typing import List
+import pickle
+from collections import OrderedDict, defaultdict
+from typing import List, Dict, Tuple
 
 import numpy as np
+from scipy.spatial.distance import cdist
+from sklearn import metrics
 
 from adapter.base import BenchmarkResult
 from benchmark import OpenMLBenchmark
+from config import CONVERTER_MAPPING, MetaConfigCollection
+from config.vectorizer import ConfigVectorizer
 from evaluation import scripts
 from evaluation.base import MongoPersistence
 from evaluation.visualization import plot_cash_incumbent, plot_overall_performance, plot_pairwise_performance, \
-    plot_successive_halving, plot_dataset_performance
+    plot_successive_halving, plot_dataset_performance, plot_configuration_similarity
+from util.mean_shift import CustomMeanShift, gower_distances
 
 
 def print_best_incumbent(ls: List[BenchmarkResult], iteration: int = -1):
@@ -28,6 +34,87 @@ def print_best_incumbent(ls: List[BenchmarkResult], iteration: int = -1):
         x = np.array(best[algorithm])
         print('{:2.2f} \\(\\pm\\) {:2.2f}'.format(x.mean() * 100, x.std() * 100))
     print()
+
+
+def print_configurations():
+    with open('assets/cash_configs.pkl', 'rb') as f:
+        cash_configs: Dict[int, Dict[str, List[Tuple[str, List[Dict]]]]] = pickle.load(f)
+
+    vectorizer = ConfigVectorizer('assets/classifier.json')
+
+    np.random.seed(42)
+
+    good_datasets = {}
+
+    total = []
+    for filter in ['Grid Search', 'Random Search', 'SMAC', 'BOHB', 'Optunity', 'hyperopt', 'RoBo gp', 'BTB']:
+        print(filter)
+
+        # if filter != 'Grid Search':
+        #     total.append(total[-1])
+        #     continue
+
+        distances = {}
+        for task, algorithms in cash_configs.items():
+            distances[task] = {}
+            for algo, values in algorithms.items():
+                distances[task][algo] = []
+                array = []
+                performances = []
+                for hpo, list in values:
+                    if filter is None or hpo == filter:
+                        for ls in list:
+                            array.append(vectorizer.vectorize(ls[0]))
+                            performances.append(ls[1])
+                if len(array) == 0:
+                    continue
+                X = np.array(array)
+                performances = np.array(performances)
+
+                # Fill missing values with random numbers
+                nan_mask = np.isnan(X)
+                X[nan_mask] = np.random.uniform(0, 1, size=np.count_nonzero(nan_mask))
+
+                ms = CustomMeanShift(bandwidth=0.25)
+                # ms = MeanShift()
+                ms.fit(X)
+
+                labels = ms.labels_
+                cluster_centers = ms.cluster_centers_
+
+                if len(np.unique(labels)) == 1:
+                    score = 1 - cdist(X, X, metric=gower_distances).mean()
+                elif len(np.unique(labels)) == X.shape[0]:
+                    score = 1 - cdist(cluster_centers, cluster_centers, metric=gower_distances).mean()
+                else:
+                    score = metrics.silhouette_score(X, labels, metric=gower_distances)
+
+                for lab in np.unique(labels):
+                    mask = labels == lab
+
+                    distances[task][algo].append([np.sum(mask), score, performances[mask].mean()])
+
+        for task, values in distances.items():
+            distances[task] = {k: v for k, v in values.items() if len(v) > 0}
+
+        good_datasets[filter] = set()
+        for task, d in distances.items():
+            for ls in d.values():
+                for l in ls:
+                    if l[0] >= 5 and l[1] >= 0.75:
+                        good_datasets[filter].add(task)
+
+        total.append((filter, distances))
+
+    d = {}
+    for s in good_datasets.values():
+        for id in s:
+            d.update({id: d.get(id, 0) + 1})
+    good_datasets = d
+    print(good_datasets)
+    print({k: v for k, v in good_datasets.items() if v >= 4})
+
+    plot_configuration_similarity(total, cash=True)
 
 
 def print_cash_results(persistence: MongoPersistence):
@@ -290,18 +377,46 @@ def print_cash_results(persistence: MongoPersistence):
     ls['RoBo gp'] = [[], [], [], []]
     ls['BTB'] = [[], [], [], []]
 
+    config_space = MetaConfigCollection.from_json('assets/classifier.json')
+
+    final_configs = {}
+
     for idx, task in enumerate(tasks):
         bm = OpenMLBenchmark(task, load=False)
 
         d = {}
         inc = {}
         results = persistence.load_all(bm)
+
+        incumbents = {}
         for res in results:
             for solver in res.solvers:
                 tmp = solver.as_numpy()[1]
                 d.setdefault(solver.algorithm, []).append(1 - tmp[last_iteration])
                 inc.setdefault(solver.algorithm, []).append(tmp[offset:iterations + offset])
-                assert np.isclose(tmp[-1], solver.score)
+
+                incumbents.setdefault(solver.algorithm, {})
+                try:
+                    config = CONVERTER_MAPPING[solver.algorithm].inverse(solver.best, config_space)
+                    algo = config['algorithm']
+                    if algo not in incumbents[solver.algorithm]:
+                        incumbents[solver.algorithm][algo] = []
+
+                    s = (1 - tmp[last_iteration] - minimum[idx]) / (maximum[idx] - minimum[idx])
+                    incumbents[solver.algorithm][algo].append((config, s))
+                except Exception as ex:
+                    print('!!!ERROR!!!', ex, task, solver.algorithm, res.seed, solver.best)
+
+        # Filter unique algorithms
+        for key, value in incumbents.items():
+            total = sum([len(v) for v in value.values()])
+            incumbents[key] = {k: v for k, v in value.items() if len(v) / total > 1 / 5}
+
+        dd = defaultdict(list)
+        for key, ddd in incumbents.items():
+            for key2, value in ddd.items():
+                dd[key2].append((key, value))
+        final_configs[task] = dict(dd)
 
         if len(d.keys()) == 0:
             print('{}: No data!'.format(task))
@@ -321,6 +436,9 @@ def print_cash_results(persistence: MongoPersistence):
             ls[key][1].append(x.std())
             ls[key][2].append(np.array(inc[key]).mean(axis=0))
             ls[key][3].append([1 - v for v in value])
+
+    with open('assets/cash_configs.pkl', 'wb') as f:
+        pickle.dump(final_configs, f)
 
     # Print raw results
     print('#####\nRaw CASH Framework Results\n#####')
