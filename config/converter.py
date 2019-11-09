@@ -506,6 +506,7 @@ CONVERTER_MAPPING = {
     'hyperopt': HyperoptConverter(),
     'BOHB': ConfigSpaceConverter(),
     'RoBo gp': RoBoConverter(),
+    'RoBO': RoBoConverter(),
     'Optunity': OptunityConverter(),
     'BTB': BtbConverter()
 }

@@ -47,7 +47,7 @@ def print_configurations():
     good_datasets = {}
 
     total = []
-    for filter in ['Grid Search', 'Random Search', 'SMAC', 'BOHB', 'Optunity', 'hyperopt', 'RoBo gp', 'BTB']:
+    for filter in ['Grid Search', 'Random Search', 'SMAC', 'BOHB', 'Optunity', 'hyperopt', 'RoBO', 'BTB']:
         print(filter)
 
         # if filter != 'Grid Search':
@@ -368,14 +368,14 @@ def print_cash_results(persistence: MongoPersistence):
     maximum = 1 - np.array(rf_baseline).mean(axis=1)
 
     ls = OrderedDict()
-    ls['Grid Search'] = [[], [], [], []]
-    ls['Random Search'] = [[], [], [], []]
-    ls['SMAC'] = [[], [], [], []]
-    ls['BOHB'] = [[], [], [], []]
-    ls['Optunity'] = [[], [], [], []]
-    ls['hyperopt'] = [[], [], [], []]
-    ls['RoBo gp'] = [[], [], [], []]
-    ls['BTB'] = [[], [], [], []]
+    ls['Grid Search'] = [[], [], [], [], []]
+    ls['Random Search'] = [[], [], [], [], []]
+    ls['SMAC'] = [[], [], [], [], []]
+    ls['BOHB'] = [[], [], [], [], []]
+    ls['Optunity'] = [[], [], [], [], []]
+    ls['hyperopt'] = [[], [], [], [], []]
+    ls['RoBO'] = [[], [], [], [], []]
+    ls['BTB'] = [[], [], [], [], []]
 
     config_space = MetaConfigCollection.from_json('assets/classifier.json')
 
@@ -392,20 +392,24 @@ def print_cash_results(persistence: MongoPersistence):
         for res in results:
             for solver in res.solvers:
                 tmp = solver.as_numpy()[1]
-                d.setdefault(solver.algorithm, []).append(1 - tmp[last_iteration])
-                inc.setdefault(solver.algorithm, []).append(tmp[offset:iterations + offset])
+                algorithm = solver.algorithm
+                if algorithm == 'RoBo gp':
+                    algorithm = 'RoBO'
 
-                incumbents.setdefault(solver.algorithm, {})
+                d.setdefault(algorithm, []).append(1 - tmp[last_iteration])
+                inc.setdefault(algorithm, []).append(tmp[offset:iterations + offset])
+
+                incumbents.setdefault(algorithm, {})
                 try:
-                    config = CONVERTER_MAPPING[solver.algorithm].inverse(solver.best, config_space)
+                    config = CONVERTER_MAPPING[algorithm].inverse(solver.best, config_space)
                     algo = config['algorithm']
-                    if algo not in incumbents[solver.algorithm]:
-                        incumbents[solver.algorithm][algo] = []
+                    if algo not in incumbents[algorithm]:
+                        incumbents[algorithm][algo] = []
 
                     s = (1 - tmp[last_iteration] - minimum[idx]) / (maximum[idx] - minimum[idx])
-                    incumbents[solver.algorithm][algo].append((config, s))
+                    incumbents[algorithm][algo].append((config, s))
                 except Exception as ex:
-                    print('!!!ERROR!!!', ex, task, solver.algorithm, res.seed, solver.best)
+                    print('!!!ERROR!!!', ex, task, algorithm, res.seed, solver.best)
 
         # Filter unique algorithms
         for key, value in incumbents.items():
@@ -436,6 +440,7 @@ def print_cash_results(persistence: MongoPersistence):
             ls[key][1].append(x.std())
             ls[key][2].append(np.array(inc[key]).mean(axis=0))
             ls[key][3].append([1 - v for v in value])
+            ls[key][4].append([(v - minimum[idx]) / (maximum[idx] - minimum[idx]) for v in value])
 
     with open('assets/cash_configs.pkl', 'wb') as f:
         pickle.dump(final_configs, f)
@@ -496,29 +501,22 @@ def print_cash_results(persistence: MongoPersistence):
     print('\n\n\n')
 
     results = [v[3] for v in ls.values()]
+    normalized = [v[4] for v in ls.values()]
 
     # Normalize values. Use precision to have higher value => better result
     max_tile = np.tile(maximum, (iterations, 1)).T
     min_tile = np.tile(minimum, (iterations, 1)).T
 
-    normalized = []
     incumbents = []
     for key in labels:
-        x = np.array(ls[key][0])
-        n = (x - minimum) / (maximum - minimum)
-        normalized.append(n)
-
         x2 = 1 - np.array(ls[key][2])
         n2 = (x2 - min_tile) / (max_tile - min_tile)
         incumbents.append(n2)
 
-    normalized = np.array(normalized)
     incumbents = np.array(incumbents)
     plot_cash_incumbent(incumbents, list(labels))
     plot_pairwise_performance(average[:, 3:], list(labels)[1:], cash=True)
-    plot_overall_performance(normalized.T, list(labels), cash=True,
-                             # colors=['b', 'g', 'r', 'c', 'm', 'pink', 'lawngreen']
-                             )
+    plot_overall_performance(normalized, list(labels), cash=True)
     plot_dataset_performance(results, minimum, maximum, list(labels), tasks, cash=True)
 
 
@@ -1146,14 +1144,16 @@ def print_automl_framework_results():
     results = [dummy_baseline, rf_baseline, random, auto_sklearn, tpot, atm, hpsklearn, h2o]
 
     average = []
+    raw = []
 
     # Print raw results
     print('#####\nRaw AutoML Framework Results\n#####')
     for idx in np.argsort(datasets):
         mean = []
-
+        raw.append([])
         for res in results:
             mean.append((1 - np.array(res[idx]).mean()))
+            raw[-1].append(1 - np.array(res[idx]))
 
         average.append(mean)
 
@@ -1193,10 +1193,15 @@ def print_automl_framework_results():
 
     minimum = average[:, 0]
     maximum = average[:, 1]
-    normalized = np.apply_along_axis(lambda x: (x - minimum) / (maximum - minimum), 0, average)
+
+    normalized = []
+    for i in range(len(raw[0])):
+        normalized.append([])
+        for j in range(len(raw)):
+            normalized[i].append([(x - minimum[j]) / (maximum[j] - minimum[j]) for x in raw[j][i]])
 
     plot_dataset_performance(results[2:], minimum, maximum, list(labels[2:]), tasks, cash=False)
-    plot_overall_performance(normalized[:, 2:], labels[2:], cash=False)
+    plot_overall_performance(normalized[2:], labels[2:], cash=False)
     plot_pairwise_performance(average[:, 2:], labels[2:], cash=False)
 
 
@@ -1221,3 +1226,4 @@ if __name__ == '__main__':
         persistence = MongoPersistence('localhost', db='benchmarks')
         print_automl_framework_results()
         print_cash_results(persistence)
+        print_configurations()
