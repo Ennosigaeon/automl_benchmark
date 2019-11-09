@@ -17,25 +17,6 @@ from evaluation.visualization import plot_cash_incumbent, plot_overall_performan
 from util.mean_shift import CustomMeanShift, gower_distances
 
 
-def print_best_incumbent(ls: List[BenchmarkResult], iteration: int = -1):
-    bm = ls[0].benchmark
-
-    best = {}
-    for solver in sum([b.solvers for b in ls], []):
-        best.setdefault(solver.algorithm, []).append(
-            abs(solver.incumbents[iteration].score - bm.get_meta_information()['f_opt'])
-        )
-
-    print(bm.get_meta_information()['name'])
-
-    algorithms = ['Random Search', 'Grid Search', 'RoBo gp', 'hyperopt', 'SMAC', 'BOHB', 'BTB', 'Optunity']
-    print(algorithms)
-    for algorithm in algorithms:
-        x = np.array(best[algorithm])
-        print('{:2.2f} \\(\\pm\\) {:2.2f}'.format(x.mean() * 100, x.std() * 100))
-    print()
-
-
 def print_configurations():
     with open('assets/cash_configs.pkl', 'rb') as f:
         cash_configs: Dict[int, Dict[str, List[Tuple[str, List[Dict]]]]] = pickle.load(f)
