@@ -82,8 +82,6 @@ def plot_method_overhead(ls: List[BenchmarkResult], line_plot: bool = True):
             previous = ev.end
 
         key = solver.algorithm
-        if key == 'RoBo gp':
-            key = 'RoBO'
         solvers.setdefault(key, []).append(y[:494])
 
     if line_plot:
@@ -154,7 +152,7 @@ def plot_pairwise_performance(x, labels: list, cash: bool = False):
 
         fig, ax = plt.subplots()
 
-        img = ax.scatter(x1, x2, c=diff, cmap='viridis', vmin=-0.5, vmax=0.5)
+        img = ax.scatter(x1, x2, c=diff, cmap='inferno', vmin=-0.5, vmax=0.5)
         # plt.colorbar(img)
 
         ax.set_axisbelow(True)
@@ -219,7 +217,7 @@ def plot_dataset_performance(values, minimum, maximum, labels: list, tasks: list
         axes[i].set_ylim([-0.5, rows - 0.5])
         axes[i].tick_params(axis='both', which='major', labelsize=6)
     axes[1].yaxis.tick_right()
-    print(sorted([datasets[tasks[idx]].task_id for idx in plot_idx]))
+    print([datasets[tasks[idx]].task_id for idx in plot_idx])
 
     for idx in range(len(values)):
         mean = [[], []]
@@ -257,39 +255,56 @@ def plot_dataset_performance(values, minimum, maximum, labels: list, tasks: list
         plt.savefig('evaluation/plots/performance-ds-frameworks.pdf', bbox_inches='tight')
 
 
-def plot_overall_performance(x, labels: list, cash: bool = False):
+def plot_overall_performance(x: List[List[List[float]]], labels: list, cash: bool = False):
     # Create box plots
     fig, ax = plt.subplots()
     fig.set_size_inches(20, 8)
-    fig.set_dpi(250)
+    fig.set_dpi(75)
 
-    values = []
-    for i in range(x.shape[1]):
-        values.append(x[x[:, i] > 0, i])
+    zoom = 10
+    values = [[item for sublist in l for item in sublist] for l in x]
+    scaled_values = []
+    for hpo in values:
+        array = np.array(hpo)
+        print(array.min(), array.max())
 
-    # notch shape box plot
-    bplot = ax.boxplot(values,
-                       notch=True,  # notch shape
-                       vert=True,  # vertical box alignment
-                       patch_artist=True,  # fill with color
-                       labels=labels)  # will be used to label x-ticks
+        top = array[array > 1.5]
+        mid = array[(1.5 > array) & (array > 0.5)]
+        bottom = array[array < 0.5]
+
+        # Rescale values
+        top = (top - 0.5) + (zoom - 1)
+        mid = (mid - 0.5) * zoom
+        bottom = bottom - 0.5
+
+        # Remove failed configurations
+        bottom = bottom[bottom > -5]
+
+        scaled_values.append(np.hstack((top, mid, bottom)))
+
+    bplot = ax.boxplot(scaled_values,
+                       notch=True,
+                       vert=True,
+                       patch_artist=True,
+                       labels=labels,
+                       flierprops={'marker': 'x', 'alpha': 0.75, 'markerfacecolor': '#1f77b4',
+                                   'markeredgecolor': '#1f77b4', 'markersize': 5})
+    ax.autoscale(False)
+    ax.plot([-10, 10], [0, 0], zorder=-1000, c='#b0b0b0')
+    ax.plot([-10, 10], [zoom, zoom], zorder=-1000, c='#b0b0b0')
+
+    ax.yaxis.grid(True)
+    ax.set_ylabel('Normalized Performance')
 
     if cash:
         ax.set_title('Performance of CASH Solvers')
-    else:
-        ax.set_title('Performance of AutoML Frameworks')
-
-    # for patch, color in zip(bplot['boxes'], colors):
-    #     patch.set_facecolor(color)
-
-    ax.yaxis.grid(True)
-    ax.set_ylabel('Misclassification Rate')
-
-    if cash:
-        ax.set_ylim([None, 2.0])
+        ax.set_yticks([-2.5, -0.5, 0, zoom / 2, zoom] + [2 * i + 0.5 + zoom for i in range(0, 6)])
+        ax.set_yticklabels([-2, 0, 0.5, 1, 1.5] + [2 * i for i in range(1, 7)])
         plt.savefig('evaluation/plots/performance-cash.pdf', bbox_inches='tight')
     else:
-        ax.set_ylim([None, 2.5])
+        ax.set_title('Performance of AutoML Frameworks')
+        ax.set_yticks([-4.5, -2.5, -0.5, 0, zoom / 2, zoom] + [2 * i + 0.5 + zoom for i in range(0, 5)])
+        ax.set_yticklabels([-4, -2, 0, 0.5, 1, 1.5] + [2 * i for i in range(1, 6)])
         plt.savefig('evaluation/plots/performance-automl-frameworks.pdf', bbox_inches='tight')
 
 
