@@ -10,6 +10,7 @@ import numpy as np
 import operator
 from matplotlib import cm, patches
 
+import util
 from adapter.base import BenchmarkResult
 from evaluation.scripts import Dataset
 
@@ -309,12 +310,9 @@ def plot_overall_performance(x: List[List[List[float]]], labels: list, cash: boo
 
 
 def plot_configuration_similarity(dicts: list, cash: bool = False):
-    def flatten(l):
-        return [item for sublist in l for item in sublist]
-
     algorithms = set()
     for dic in dicts:
-        algorithms.update(flatten([i.keys() for i in dic[1].values()]))
+        algorithms.update(util.flatten([i.keys() for i in dic[1].values()]))
     colours = iter(cm.jet(np.linspace(0, 1, len(algorithms))))
     colours = {k: v for k, v in zip(algorithms, colours)}
     base_size = (matplotlib.rcParams['lines.markersize'] ** 2) * 0.33
@@ -352,7 +350,7 @@ def plot_configuration_similarity(dicts: list, cash: bool = False):
 
     if len(dicts) == 1:
         axes = [axes]
-    axes = flatten(axes)
+    axes = util.flatten(axes)
 
     handles = []
     labels = []

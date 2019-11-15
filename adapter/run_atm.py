@@ -6,6 +6,8 @@ import time
 
 import numpy as np
 import pandas as pd
+from sklearn.pipeline import Pipeline
+from typing import List
 
 from benchmark import OpenMLBenchmark
 
@@ -66,6 +68,21 @@ def main(bm: OpenMLBenchmark, timeout: int, jobs: int) -> float:
 
     # Results are stored in database
     return 1
+
+
+# noinspection PyUnresolvedReferences
+def load_pipeline(input: str) -> List[List[str]]:
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.neighbors import KNeighborsClassifier
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.tree import DecisionTreeClassifier
+
+    pipeline: Pipeline = eval(input)
+    res = []
+    for s in pipeline.steps:
+        res.append(type(s[1]).__name__)
+
+    return [res]
 
 ###########
 # Get results via

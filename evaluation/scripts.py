@@ -3,8 +3,10 @@ import pickle
 
 import numpy as np
 import openml
+from atm import Model
 from atm.utilities import base_64_to_object
 
+from adapter import run_atm, run_auto_sklearn, run_h2o, run_hpsklearn, run_tpot
 from benchmark import OpenMLBenchmark
 from evaluation.base import MongoPersistence
 
@@ -138,14 +140,6 @@ def print_data_set_stats():
 
 
 def load_atm_results():
-    mappings = {"ada": "sklearn.ensemble.AdaBoostClassifier", "bnb": "sklearn.naive_bayes.BernoulliNB",
-                "dt": "sklearn.tree.DecisionTreeClassifier", "et": "sklearn.ensemble.ExtraTreesClassifier",
-                "gnb": "sklearn.naive_bayes.GaussianNB", "gp": "sklearn.gaussian_process.GaussianProcessClassifier",
-                "knn": "sklearn.neighbors.KNeighborsClassifier", "logreg": "sklearn.linear_model.LogisticRegression",
-                "mlp": "sklearn.neural_network.MLPClassifier", "mnb": "sklearn.naive_bayes.MultinomialNB",
-                "pa": "sklearn.linear_model.PassiveAggressiveClassifier", "svm": "sklearn.svm.SVC",
-                "rf": "sklearn.ensemble.RandomForestClassifier", "sgd": "sklearn.linear_model.SGDClassifier", }
-
     def load(c):
         result = {}
         for task, res, hyper, cat, method, const in c.execute('''
@@ -174,9 +168,11 @@ def load_atm_results():
             const = dict(base_64_to_object(const))
             params = {**hyper, **cat, **const}
 
-            result[task][1].append('{}({})'.format(mappings[method],
-                                                   ', '.join(
-                                                       '{}={}'.format(key, value) for key, value in params.items())))
+            model = Model(method, params, None, None)
+            model._make_pipeline()
+            pipeline = model.pipeline
+
+            result[task][1].append(str(pipeline))
         return result
 
     import sqlite3
@@ -208,9 +204,10 @@ def load_file_results(base_dir: str, algorithm: str):
         return data[abs(data - np.mean(data)) < 0.2]
 
     np.set_printoptions(linewidth=1000)
-
+    pipelines = []
     for task in framework_tasks:
         name = os.path.join(base_dir, algorithm, '{}.txt'.format(task))
+        pipelines.append([])
 
         if os.path.exists(name):
             with open(name, 'r') as f:
@@ -220,8 +217,30 @@ def load_file_results(base_dir: str, algorithm: str):
 
                 filtered_values = reject_outliers(values)
                 assert values.shape == filtered_values.shape
+
+                line = f.readline()
+                while line:
+                    if algorithm == 'atm':
+                        pipeline = run_atm.load_pipeline(line)
+                    elif algorithm == 'random' or algorithm == 'auto-sklearn':
+                        pipeline = run_auto_sklearn.load_pipeline(line)
+                    elif algorithm == 'h2o':
+                        pipeline = run_h2o.load_pipeline(line)
+                    elif algorithm == 'hpsklearn':
+                        pipeline = run_hpsklearn.load_pipeline(line)
+                    elif algorithm == 'tpot':
+                        pipeline = run_tpot.load_pipeline(line)
+                    else:
+                        raise ValueError('Unknown algorithm {}'.format(algorithm))
+
+                    pipelines += pipeline
+                    line = f.readline()
         else:
             print('{},  # {}'.format([1], task))
+
+    pipelines = [p for p in pipelines if len(p) > 0]
+    print('\n\n')
+    print(pipelines)
 
 
 if __name__ == '__main__':
