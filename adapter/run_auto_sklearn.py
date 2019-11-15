@@ -1,6 +1,7 @@
 import multiprocessing
 import shutil
 import time
+from typing import List
 
 import sklearn.datasets
 import sklearn.metrics
@@ -139,3 +140,59 @@ def main(bm: OpenMLBenchmark, timeout: int, run_timeout: int, jobs: int, random:
     print(automl.show_models())
     score = 1 - sklearn.metrics.accuracy_score(y_test, predictions)
     return score
+
+
+# noinspection PyUnresolvedReferences
+def load_pipeline(input: str) -> List[List[str]]:
+    from autosklearn.evaluation.abstract_evaluator import MyDummyClassifier
+    from autosklearn.pipeline.classification import SimpleClassificationPipeline
+    from autosklearn.pipeline.components.classification import ClassifierChoice
+    from autosklearn.pipeline.components.data_preprocessing.rescaling import RescalingChoice
+    from autosklearn.pipeline.components.feature_preprocessing import FeaturePreprocessorChoice
+    from autosklearn.pipeline.components.feature_preprocessing.no_preprocessing import NoPreprocessing
+    from autosklearn.pipeline.components.data_preprocessing.rescaling.none import NoRescalingComponent
+    from autosklearn.pipeline.components.data_preprocessing.one_hot_encoding import OHEChoice
+    from autosklearn.pipeline.components.data_preprocessing.one_hot_encoding.no_encoding import NoEncoding
+
+    res = []
+    try:
+        pipelines: List[Union[SimpleClassificationPipeline, MyDummyClassifier]] = eval(input)
+        for pipeline in pipelines:
+            res.append([])
+            if isinstance(pipeline[1], MyDummyClassifier):
+                res[-1].append(type(pipeline[1]).__name__)
+            else:
+                for s in pipeline[1].steps:
+                    if isinstance(s[1], FeaturePreprocessorChoice) or isinstance(s[1], ClassifierChoice) or \
+                            isinstance(s[1], RescalingChoice) or isinstance(s[1], OHEChoice):
+                        choice = s[1].choice
+                        if isinstance(choice, NoPreprocessing) or isinstance(choice, NoRescalingComponent) or \
+                                isinstance(choice, NoEncoding):
+                            continue
+                        res[-1].append(type(s[1].choice).__name__)
+                    else:
+                        res[-1].append(type(s[1]).__name__)
+
+        for i in range(len(res[-1])):
+            n = res[-1][i]
+
+            if n.endswith('Component'):
+                n = n[:-len('Component')]
+            if n == 'LibLinear_SVC':
+                n = 'LinearSVC'
+            if n == 'LibSVM_SVC':
+                n = 'SVC'
+            if n == 'KNearestNeighborsClassifier':
+                n = 'KNeighborsClassifier'
+            if n == 'RandomForest':
+                n = 'RandomForestClassifier'
+            if n == 'SelectPercentileClassification':
+                n = 'SelectPercentile'
+            if n == 'ExtraTreesPreprocessorClassification':
+                n = 'SelectFromModel'
+
+            res[-1][i] = n
+    except Exception:
+        print(input)
+        raise
+    return res
