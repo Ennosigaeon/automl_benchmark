@@ -1,4 +1,6 @@
+import copy
 import itertools
+import operator
 import pickle
 from typing import List, Dict
 
@@ -6,8 +8,11 @@ import math
 import matplotlib
 import matplotlib.colors as colors
 import matplotlib.pyplot as plt
+import networkx as nx
 import numpy as np
 from matplotlib import cm, patches
+from matplotlib.legend_handler import HandlerBase
+from sklearn.preprocessing import minmax_scale
 
 import util
 from adapter.base import BenchmarkResult
@@ -368,6 +373,93 @@ def plot_configuration_similarity(lists: List, cash: bool = False):
         plt.savefig('evaluation/plots/config-similarity-cash.pdf')
     else:
         plt.savefig('evaluation/plots/config-similarity-frameworks.pdf')
+
+
+def plot_pipeline_similarity(G: nx.Graph, seed: int = 27):
+    labels_mapping = {}
+    labels = {}
+
+    node_frequency = []
+    node_list = []
+    color_map = []
+    H = nx.bfs_tree(G, '__root__')
+    for n in H.nodes:
+        node_list.append(n)
+        color_map.append(FACE_COLOR)
+        node_frequency.append(G.nodes[n]['count'])
+
+        label = G.nodes[n]['label']
+        if len(label) > 0:
+            if label not in labels_mapping:
+                labels_mapping[label] = len(labels_mapping) + 1
+            labels[n] = labels_mapping[label]
+
+    node_frequency = np.array(node_frequency)
+    # Scale most prominent nodes down
+    node_frequency[node_frequency > 250] = 250
+    color_map[node_list.index('__root__')] = 'r'
+
+    node_frequency = (node_frequency / np.sum(node_frequency))
+    node_frequency = node_frequency / node_frequency.max()
+
+    edge_frequency = []
+    edges = []
+    for e in H.edges:
+        edges.append(e)
+        edge_frequency.append(G.edges[e]['count'])
+    edge_frequency = np.array(edge_frequency)
+    # Scale most prominent edges down
+    edge_frequency[edge_frequency > 250] = 250
+
+    edge_frequency = (edge_frequency / np.sum(edge_frequency))
+    edge_frequency = edge_frequency / edge_frequency.max()
+
+    fig, ax = plt.subplots()
+    fig.set_size_inches((20, 10))
+
+    pos = nx.nx_agraph.graphviz_layout(H, prog='neato', args='-Goverlap=true -Gstart={}'.format(seed))
+    tmp = minmax_scale(np.asarray([pos[v] for v in node_list]))
+    for i in range(len(node_list)):
+        pos[node_list[i]] = (tmp[i, 0], tmp[i, 1])
+
+    nx.draw(H, pos=pos, ax=ax, node_list=node_list, node_color=color_map, node_size=node_frequency * 200,
+            edge_list=edges, edge_color=edge_frequency, edge_cmap=plt.get_cmap('binary'), edge_vmin=-0.1, arrowsize=5,
+            labels=labels, font_size=8)
+
+    handles = []
+    labels = []
+    for label, id in sorted(labels_mapping.items(), key=operator.itemgetter(1)):
+        handles.append(ax.text(x=0, y=0, s=id, c='w'))
+
+        if label.endswith('Classifier'):
+            labels.append(label[:-len('Classifier')])
+        else:
+            labels.append(label)
+
+    class TextHandler(HandlerBase):
+        def create_artists(self, legend, orig_handle, xdescent, ydescent,
+                           width, height, fontsize, trans):
+            h = copy.copy(orig_handle)
+            h.set_color('k')
+            h.set_position((width / 2., height / 2.))
+            h.set_transform(trans)
+            h.set_ha("center")
+            h.set_va("center")
+            fp = orig_handle.get_font_properties().copy()
+            fp.set_size(fontsize)
+            # uncomment the following line,
+            # if legend symbol should have the same size as in the plot
+            h.set_font_properties(fp)
+            return [h]
+
+    ax.legend(handles, labels, handler_map={type(handles[0]): TextHandler()}, ncol=2, fontsize=8)
+    # TODO remove ax.text patches again after legend is created
+
+    ax.set_ylim([-0.001, 1.005])
+    ax.set_xlim([-0.001, 1.005])
+
+    fig.show()
+    fig.savefig('evaluation/plots/pipelines.pdf', bbox_inches='tight')
 
 
 def plot_branin():
