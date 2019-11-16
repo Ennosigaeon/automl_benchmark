@@ -7,12 +7,14 @@ import matplotlib
 import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 import numpy as np
-import operator
 from matplotlib import cm, patches
 
 import util
 from adapter.base import BenchmarkResult
 from evaluation.scripts import Dataset
+
+FACE_COLOR = '#1f77b4'
+AXIS_COLOR = '#b0b0b0'
 
 
 def plot_evaluated_configurations(ls: List[BenchmarkResult]):
@@ -160,10 +162,10 @@ def plot_pairwise_performance(x, labels: list, cash: bool = False):
         ax.grid(zorder=-1000)
 
         ax.autoscale(False)
-        ax.plot([-5, 5], [-5, 5], zorder=-1000, c='#b0b0b0')
+        ax.plot([-5, 5], [-5, 5], zorder=-1000, c=AXIS_COLOR)
 
-        ax.set_xlabel(labels[i])
-        ax.set_ylabel(labels[j])
+        ax.set_xlabel(labels[i], fontsize=12)
+        ax.set_ylabel(labels[j], fontsize=12)
 
         lower = min(np.min(x1), np.min(x2)) - 0.05
         upper = max(max(np.max(x1), np.max(x2)), 1.05)
@@ -216,7 +218,7 @@ def plot_dataset_performance(values, minimum, maximum, labels: list, tasks: list
         axes[i].tick_params(axis=u'both', which=u'both', length=0)
         axes[i].set_yticklabels([datasets[tasks[idx]].name[:15] for idx in plot_idx[i * rows: (i + 1) * rows]])
         axes[i].set_ylim([-0.5, rows - 0.5])
-        axes[i].tick_params(axis='both', which='major', labelsize=6)
+        axes[i].tick_params(axis='both', which='major', labelsize=8)
     axes[1].yaxis.tick_right()
     print([datasets[tasks[idx]].task_id for idx in plot_idx])
 
@@ -246,9 +248,9 @@ def plot_dataset_performance(values, minimum, maximum, labels: list, tasks: list
 
     handles, labels_txt = axes[0].get_legend_handles_labels()
 
-    fig.subplots_adjust(bottom=0.033)
+    fig.subplots_adjust(bottom=0.04)
     fig.legend(handles, labels_txt, ncol=len(labels) // 2, loc='lower center', borderaxespad=0.1,
-               fontsize=6)
+               fontsize=8)
 
     if cash:
         plt.savefig('evaluation/plots/performance-ds-cash.pdf', bbox_inches='tight')
@@ -288,11 +290,11 @@ def plot_overall_performance(x: List[List[List[float]]], labels: list, cash: boo
                        vert=True,
                        patch_artist=True,
                        labels=labels,
-                       flierprops={'marker': 'x', 'alpha': 0.75, 'markerfacecolor': '#1f77b4',
-                                   'markeredgecolor': '#1f77b4', 'markersize': 5})
+                       flierprops={'marker': 'x', 'alpha': 0.75, 'markerfacecolor': FACE_COLOR,
+                                   'markeredgecolor': FACE_COLOR, 'markersize': 5})
     ax.autoscale(False)
-    ax.plot([-10, 10], [0, 0], zorder=-1000, c='#b0b0b0')
-    ax.plot([-10, 10], [zoom, zoom], zorder=-1000, c='#b0b0b0')
+    ax.plot([-10, 10], [0, 0], zorder=-1000, c=AXIS_COLOR)
+    ax.plot([-10, 10], [zoom, zoom], zorder=-1000, c=AXIS_COLOR)
 
     ax.yaxis.grid(True)
     ax.set_ylabel('Normalized Performance')
@@ -309,12 +311,10 @@ def plot_overall_performance(x: List[List[List[float]]], labels: list, cash: boo
         plt.savefig('evaluation/plots/performance-automl-frameworks.pdf', bbox_inches='tight')
 
 
-def plot_configuration_similarity(dicts: list, cash: bool = False):
+def plot_configuration_similarity(lists: List, cash: bool = False):
     algorithms = set()
-    for dic in dicts:
+    for dic in lists:
         algorithms.update(util.flatten([i.keys() for i in dic[1].values()]))
-    colours = iter(cm.jet(np.linspace(0, 1, len(algorithms))))
-    colours = {k: v for k, v in zip(algorithms, colours)}
     base_size = (matplotlib.rcParams['lines.markersize'] ** 2) * 0.33
 
     def scatter(ax, dict, title):
@@ -325,9 +325,8 @@ def plot_configuration_similarity(dicts: list, cash: bool = False):
                     values[algo] = []
                 values[algo] += v
 
-        rect = patches.Rectangle((4.95, 0.725), 5.3, 0.325, edgecolor='lightgray', facecolor='lightgray', alpha=0.5)
-        ax.add_patch(rect)
-
+        ax.add_patch(patches.Rectangle((4.95, 0.725), 5.3, 0.325, edgecolor='lightgray', facecolor='lightgray',
+                                       alpha=0.5, zorder=-1000))
         for algo, array in values.items():
             tmp = np.array(array)
             x = tmp[:, 0]
@@ -335,7 +334,7 @@ def plot_configuration_similarity(dicts: list, cash: bool = False):
             y = tmp[:, 1]
             s = tmp[:, 2] * base_size
 
-            ax.scatter(x, y, label=algo.split('.')[-1], alpha=1, linewidths=0, s=s, c=[colours[algo]])
+            ax.scatter(x, y, label=algo.split('.')[-1], alpha=0.75, linewidths=0, s=s, c=FACE_COLOR)
 
         ax.set_ylim([0, 1.05])
         ax.set_xlim([-0.25, 10.25])
@@ -345,53 +344,25 @@ def plot_configuration_similarity(dicts: list, cash: bool = False):
         ax.tick_params(axis='both', which='major', labelsize=4)
         ax.tick_params(axis='both', which='minor', labelsize=4)
 
-    rows = max(1, math.ceil(len(dicts) / 3))
-    fig, axes = plt.subplots(rows, 3 if len(dicts) > 1 else 1)
+    rows = max(1, math.ceil(len(lists) / 3))
+    fig, axes = plt.subplots(rows, 3 if len(lists) > 1 else 1)
 
-    if len(dicts) == 1:
+    if len(lists) == 1:
         axes = [axes]
     axes = util.flatten(axes)
 
+    for i, d in enumerate(lists):
+        scatter(axes[i], d[1], d[0])
     handles = []
     labels = []
-    for i, dict in enumerate(dicts):
-        scatter(axes[i], dict[1], dict[0])
-        h, l = axes[i].get_legend_handles_labels()
-        for i in range(len(h)):
-            try:
-                labels.index(l[i])
-            except ValueError:
-                handles.append(h[i])
-                labels.append(l[i])
-
-    fig.delaxes(axes[-1])
-
-    suffix = 'Classifier'
-    labels = [s[:-len(suffix)] if s.endswith(suffix) else s for s in labels]
-    for i in range(len(labels)):
-        if labels[i] == 'LinearDiscriminantAnalysis':
-            labels[i] = 'LDA'
-        if labels[i] == 'QuadraticDiscriminantAnalysis':
-            labels[i] = 'QDA'
-
-    hl = sorted(zip(handles, labels), key=operator.itemgetter(1))
-    handles, labels = zip(*hl)
-    leg = fig.legend(handles, labels, ncol=2, bbox_to_anchor=(0.995, 0.26), columnspacing=1, borderaxespad=0.1,
-                     fontsize=6, scatterpoints=1, handletextpad=0.33)
-    for handle in leg.legendHandles:
-        handle.set_sizes([8.0])
-
-    handles2 = []
-    labels2 = []
-    for i in np.arange(0.25, 2.1, 0.5):
-        labels2.append(i)
-        handles2.append(plt.scatter([], [], s=i * base_size, edgecolors='none', c='b'))
-    fig.legend(handles2, labels2, ncol=len(labels2), bbox_to_anchor=(0.995, 0.30), columnspacing=1.2, borderaxespad=0.1,
+    for i in np.arange(0.25, 2.1, 0.25):
+        labels.append(i)
+        handles.append(plt.scatter([], [], s=i * base_size, edgecolors='none', c=FACE_COLOR))
+    fig.legend(handles, labels, ncol=len(labels), loc='lower center', borderaxespad=0.05,
                fontsize=6)
-    fig.text(0.68, 0.31, 'Normalized Accuracy', fontsize=6)
 
     fig.tight_layout()
-    fig.subplots_adjust(hspace=0.3, left=0.05, right=0.99, bottom=0.06, top=0.98)
+    fig.subplots_adjust(hspace=0.3, left=0.05, right=0.99, bottom=0.09, top=0.98)
 
     if cash:
         plt.savefig('evaluation/plots/config-similarity-cash.pdf')
