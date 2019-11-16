@@ -234,11 +234,8 @@ def print_cash_results(persistence: MongoPersistence):
     tasks = scripts.cash_tasks
     datasets = scripts.cash_datasets
 
-    # TODO use data set ids instead of task ids
-    datasets = tasks
-
     # Skip first parallel iteration
-    last_iteration = 25
+    last_iteration = 100
     offset = 1
     iterations = 325 - offset
 
@@ -589,7 +586,7 @@ def print_cash_results(persistence: MongoPersistence):
             print('{:.4f}'.format(mean[i]).zfill(4), end=' ')
             # print('\\(\\pm\\)', '{:.3f}'.format(std[i]).zfill(4), end='')
             if i == len(mean) - 1:
-                print('\t\\\\')
+                print('\t\\\\ % {}'.format(tasks[idx]))
             else:
                 print('\t&\t', end='')
 
@@ -636,9 +633,6 @@ def print_cash_results(persistence: MongoPersistence):
 def print_automl_framework_results():
     datasets = scripts.framework_datasets
     tasks = scripts.framework_tasks
-
-    # TODO use data set ids instead of task ids
-    datasets = tasks
 
     # @formatter:off
     dummy_baseline = [
@@ -1253,7 +1247,8 @@ def print_automl_framework_results():
     assert len(datasets) == len(auto_sklearn) == len(tpot) == len(atm) == len(hpsklearn) == len(random) == len(h2o) == \
            len(rf_baseline) == len(dummy_baseline)
 
-    labels = ['Dummy', 'Random Forest', 'Random Search', 'auto-sklearn', 'TPOT', 'ATM', 'hyperopt-sklearn', 'H2O']
+    labels = ['Dummy', 'Random Forest', 'Random Search', 'auto-sklearn', 'TPOT', 'ATM', 'hyperopt-sklearn',
+              'H2O AutoML']
     results = [dummy_baseline, rf_baseline, random, auto_sklearn, tpot, atm, hpsklearn, h2o]
 
     average = []
