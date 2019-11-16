@@ -17,75 +17,78 @@ from evaluation.visualization import plot_cash_incumbent, plot_overall_performan
 from util.mean_shift import CustomMeanShift, gower_distances
 
 
-def print_configurations():
-    with open('assets/cash_configs.pkl', 'rb') as f:
-        cash_configs: Dict[int, Dict[str, List[Tuple[str, List[Dict]]]]] = pickle.load(f)
+def print_configurations(load_cluster: bool = True):
+    if load_cluster:
+        with open('assets/config_clusters.pkl', 'rb') as f:
+            total: List = pickle.load(f)
+    else:
+        with open('assets/cash_configs.pkl', 'rb') as f:
+            cash_configs: Dict[int, Dict[str, List[Tuple[str, List[Dict]]]]] = pickle.load(f)
 
-    vectorizer = ConfigVectorizer('assets/classifier.json')
+        vectorizer = ConfigVectorizer('assets/classifier.json')
 
-    np.random.seed(42)
+        np.random.seed(42)
+
+        total = []
+        for filter in ['All', 'Grid Search', 'Random Search', 'SMAC', 'BOHB', 'Optunity', 'hyperopt', 'RoBO', 'BTB']:
+            print(filter)
+
+            distances = {}
+            for task, algorithms in cash_configs.items():
+                print(task)
+                distances[task] = {}
+                for algo, values in algorithms.items():
+                    distances[task][algo] = []
+                    array = []
+                    performances = []
+                    for hpo, list in values:
+                        if filter is None or filter == 'All' or hpo == filter:
+                            for ls in list:
+                                array.append(vectorizer.vectorize(ls[0]))
+                                performances.append(ls[1])
+                    if len(array) == 0:
+                        continue
+                    X = np.array(array)
+                    performances = np.array(performances)
+
+                    # Fill missing values with random numbers
+                    nan_mask = np.isnan(X)
+                    X[nan_mask] = np.random.uniform(0, 1, size=np.count_nonzero(nan_mask))
+
+                    ms = CustomMeanShift(bandwidth=0.25)
+                    # ms = MeanShift()
+                    ms.fit(X)
+
+                    labels = ms.labels_
+                    cluster_centers = ms.cluster_centers_
+
+                    if len(np.unique(labels)) == 1:
+                        score = 1 - cdist(X, X, metric=gower_distances).mean()
+                    elif len(np.unique(labels)) == X.shape[0]:
+                        score = 1 - cdist(cluster_centers, cluster_centers, metric=gower_distances).mean()
+                    else:
+                        score = metrics.silhouette_score(X, labels, metric=gower_distances)
+
+                    for lab in np.unique(labels):
+                        mask = labels == lab
+
+                        distances[task][algo].append([np.sum(mask), score, performances[mask].mean()])
+
+            for task, values in distances.items():
+                distances[task] = {k: v for k, v in values.items() if len(v) > 0}
+            total.append((filter, distances))
+
+            with open('assets/config_clusters.pkl', 'wb') as f:
+                pickle.dump(total, f)
 
     good_datasets = {}
-
-    total = []
-    for filter in ['Grid Search', 'Random Search', 'SMAC', 'BOHB', 'Optunity', 'hyperopt', 'RoBO', 'BTB']:
-        print(filter)
-
-        # if filter != 'Grid Search':
-        #     total.append(total[-1])
-        #     continue
-
-        distances = {}
-        for task, algorithms in cash_configs.items():
-            distances[task] = {}
-            for algo, values in algorithms.items():
-                distances[task][algo] = []
-                array = []
-                performances = []
-                for hpo, list in values:
-                    if filter is None or hpo == filter:
-                        for ls in list:
-                            array.append(vectorizer.vectorize(ls[0]))
-                            performances.append(ls[1])
-                if len(array) == 0:
-                    continue
-                X = np.array(array)
-                performances = np.array(performances)
-
-                # Fill missing values with random numbers
-                nan_mask = np.isnan(X)
-                X[nan_mask] = np.random.uniform(0, 1, size=np.count_nonzero(nan_mask))
-
-                ms = CustomMeanShift(bandwidth=0.25)
-                # ms = MeanShift()
-                ms.fit(X)
-
-                labels = ms.labels_
-                cluster_centers = ms.cluster_centers_
-
-                if len(np.unique(labels)) == 1:
-                    score = 1 - cdist(X, X, metric=gower_distances).mean()
-                elif len(np.unique(labels)) == X.shape[0]:
-                    score = 1 - cdist(cluster_centers, cluster_centers, metric=gower_distances).mean()
-                else:
-                    score = metrics.silhouette_score(X, labels, metric=gower_distances)
-
-                for lab in np.unique(labels):
-                    mask = labels == lab
-
-                    distances[task][algo].append([np.sum(mask), score, performances[mask].mean()])
-
-        for task, values in distances.items():
-            distances[task] = {k: v for k, v in values.items() if len(v) > 0}
-
-        good_datasets[filter] = set()
-        for task, d in distances.items():
+    for entry in total:
+        good_datasets[entry[0]] = set()
+        for task, d in entry[1].items():
             for ls in d.values():
                 for l in ls:
                     if l[0] >= 5 and l[1] >= 0.75:
-                        good_datasets[filter].add(task)
-
-        total.append((filter, distances))
+                        good_datasets[entry[0]].add(task)
 
     d = {}
     for s in good_datasets.values():
@@ -93,7 +96,7 @@ def print_configurations():
             d.update({id: d.get(id, 0) + 1})
     good_datasets = d
     print(good_datasets)
-    print({k: v for k, v in good_datasets.items() if v >= 4})
+    print({k: v for k, v in good_datasets.items() if v >= 5})
 
     plot_configuration_similarity(total, cash=True)
 
