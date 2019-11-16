@@ -2,18 +2,19 @@ import pickle
 from collections import OrderedDict, defaultdict
 from typing import List, Dict, Tuple
 
+import networkx as nx
 import numpy as np
 from scipy.spatial.distance import cdist
 from sklearn import metrics
 
-from adapter.base import BenchmarkResult
+import util
 from benchmark import OpenMLBenchmark
 from config import CONVERTER_MAPPING, MetaConfigCollection
 from config.vectorizer import ConfigVectorizer
 from evaluation import scripts
 from evaluation.base import MongoPersistence
 from evaluation.visualization import plot_cash_incumbent, plot_overall_performance, plot_pairwise_performance, \
-    plot_successive_halving, plot_dataset_performance, plot_configuration_similarity
+    plot_successive_halving, plot_dataset_performance, plot_configuration_similarity, plot_pipeline_similarity
 from util.mean_shift import CustomMeanShift, gower_distances
 
 
@@ -99,6 +100,134 @@ def print_configurations(load_cluster: bool = True):
     print({k: v for k, v in good_datasets.items() if v >= 5})
 
     plot_configuration_similarity(total, cash=True)
+
+
+def print_pipelines(print_stats: bool = True, plot_pipeline: bool = False):
+    with open('assets/pipelines.pkl', 'rb') as f:
+        raw_pipelines = pickle.load(f)
+
+    if print_stats:
+        algo_mapping = {}
+        token_pipelines = {}
+        generalized_token_pipeline = {}
+        generalized_mappings = {
+            'AdaBoostClassifier': 0,
+            'Balancing': 2,
+            'BernoulliNB': 0,
+            'Binarizer': 1,
+            'DecisionTreeClassifier': 0,
+            'DeepLearningClassifier': 0,
+            'ExtraTreesClassifier': 0,
+            'FastICA': 1,
+            'FeatureAgglomeration': 1,
+            'FunctionTransformer': 1,
+            'GaussianNB': 0,
+            'GeneralizedLinearClassifier': 0,
+            'GradientBoostingClassifier': 0,
+            'Imputation': 2,
+            'KNeighborsClassifier': 0,
+            'KernelPCA': 1,
+            'LDA': 0,
+            'LinearSVC': 0,
+            'LogisticRegression': 0,
+            'MaxAbsScaler': 2,
+            'MinMaxScaler': 2,
+            'MultinomialNB': 0,
+            'MyDummyClassifier': 0,
+            'Normalizer': 2,
+            'Nystroem': 1,
+            'OneHotEncoder': 2,
+            'PCA': 1,
+            'PolynomialFeatures': 1,
+            'QDA': 0,
+            'QuantileTransformer': 2,
+            'RBFSampler': 1,
+            'RandomForestClassifier': 0,
+            'RandomKitchenSinks': 1,
+            'RandomTreesEmbedding': 0,
+            'RobustScaler': 2,
+            'SGDClassifier': 0,
+            'SVC': 0,
+            'SelectFromModel': 1,
+            'SelectFwe': 1,
+            'SelectPercentile': 1,
+            'SelectRates': 1,
+            'StandardScaler': 2,
+            'VarianceThreshold': 2,
+            'XGBClassifier': 0,
+            'ZeroCount': 1
+        }
+
+        for key, value in raw_pipelines.items():
+            l = sum([len(p) for p in value]) / len(value)
+            print(key, l)
+
+            token_pipelines[key] = []
+            generalized_token_pipeline[key] = []
+            for pipeline in value:
+                token_pipelines[key].append([])
+                generalized_token_pipeline[key].append([])
+                for algo in pipeline:
+                    if algo not in algo_mapping:
+                        algo_mapping[algo] = chr(len(algo_mapping) + 65)
+                    token_pipelines[key][-1].append(algo_mapping[algo])
+                    generalized_token_pipeline[key][-1].append(str(generalized_mappings[algo]))
+                token_pipelines[key][-1] = ''.join(token_pipelines[key][-1])
+                generalized_token_pipeline[key][-1] = ''.join(generalized_token_pipeline[key][-1])
+
+        print(algo_mapping.keys())
+        print('\n\n')
+
+        def distance(dict, key1: str, key2: str = None):
+            import Levenshtein
+
+            if key2 is None:
+                key2 = key1
+            list1 = dict[key1]
+            list2 = dict[key2]
+            n = len(list1)
+            m = len(list2)
+
+            d = np.zeros((n, m))
+            for i in range(n):
+                for j in range(m):
+                    d[i][j] = Levenshtein.ratio(list1[i], list2[j])
+            print(key1, key2, d.mean(), d.std())
+
+        for i in token_pipelines.keys():
+            for j in token_pipelines.keys():
+                distance(token_pipelines, i, j)
+
+        for i in generalized_token_pipeline.keys():
+            for j in generalized_token_pipeline.keys():
+                distance(generalized_token_pipeline, i, j)
+
+    if plot_pipeline:
+        all_pipelines = util.flatten(raw_pipelines.values())
+
+        G = nx.DiGraph()
+        ROOT = '__root__'
+        G.add_node(ROOT, count=0, label='')
+        for pipeline in all_pipelines:
+            predecessor = ROOT
+            G.node[ROOT]['count'] += 1
+
+            for idx, algo in enumerate(pipeline):
+                if idx > 7:
+                    break
+
+                name = '{}_{}'.format(predecessor, algo)
+                if G.has_node(name):
+                    G[predecessor][name]['count'] += 1
+                    G.node[name]['count'] += 1
+                else:
+                    G.add_node(name, count=1, label=algo)
+                    G.add_edge(predecessor, name, count=1)
+                predecessor = name
+
+        filtered_nodes = [n for n, v in G.nodes(data=True) if v['count'] > 2]
+        H = G.subgraph(filtered_nodes)
+        plot_pipeline_similarity(H)
 
 
 def print_cash_results(persistence: MongoPersistence):
@@ -1208,6 +1337,7 @@ if __name__ == '__main__':
     # noinspection PyUnreachableCode
     if True:
         persistence = MongoPersistence('localhost', db='benchmarks')
-        print_automl_framework_results()
-        print_cash_results(persistence)
+        # print_automl_framework_results()
+        # print_pipelines()
+        # print_cash_results(persistence)
         print_configurations()
