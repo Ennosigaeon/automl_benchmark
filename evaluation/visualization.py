@@ -172,11 +172,8 @@ def plot_pairwise_performance(x, labels: list, cash: bool = False):
         ax.set_xlabel(labels[i], fontsize=12)
         ax.set_ylabel(labels[j], fontsize=12)
 
-        lower = min(np.min(x1), np.min(x2)) - 0.05
-        upper = max(max(np.max(x1), np.max(x2)), 1.05)
-
-        ax.set_xlim([lower, upper])
-        ax.set_ylim([lower, upper])
+        ax.set_xlim([0.05, 1.05])
+        ax.set_ylim([0.05, 1.05])
 
         prefix = 'cash' if cash else 'frameworks'
         plt.savefig('evaluation/plots/comparison-{}-{}-{}.pdf'.format(prefix,
@@ -220,8 +217,9 @@ def plot_dataset_performance(values, minimum, maximum, labels: list, tasks: list
         axes[i].grid(True, linewidth=0.5, alpha=0.75)
         axes[i].set_axisbelow(True)
         axes[i].set_yticks(np.arange(rows))
+        axes[i].set_xticks([0.2, 0.4, 0.6, 0.8, 1.0])
         axes[i].tick_params(axis=u'both', which=u'both', length=0)
-        axes[i].set_yticklabels([datasets[tasks[idx]].name[:15] for idx in plot_idx[i * rows: (i + 1) * rows]])
+        axes[i].set_yticklabels([tasks[idx] for idx in plot_idx[i * rows: (i + 1) * rows]])
         axes[i].set_ylim([-0.5, rows - 0.5])
         axes[i].tick_params(axis='both', which='major', labelsize=8)
     axes[1].yaxis.tick_right()
@@ -339,7 +337,7 @@ def plot_configuration_similarity(lists: List, cash: bool = False):
             y = tmp[:, 1]
             s = tmp[:, 2] * base_size
 
-            ax.scatter(x, y, label=algo.split('.')[-1], alpha=0.75, linewidths=0, s=s, c=FACE_COLOR)
+            ax.scatter(x, y, label=algo.split('.')[-1], alpha=0.5, linewidths=0, s=s, c=FACE_COLOR)
 
         ax.set_ylim([0, 1.05])
         ax.set_xlim([-0.25, 10.25])
@@ -375,7 +373,7 @@ def plot_configuration_similarity(lists: List, cash: bool = False):
         plt.savefig('evaluation/plots/config-similarity-frameworks.pdf')
 
 
-def plot_pipeline_similarity(G: nx.Graph, seed: int = 27):
+def plot_pipeline_similarity(G: nx.Graph, seed: int = 8):
     labels_mapping = {}
     labels = {}
 
@@ -415,21 +413,33 @@ def plot_pipeline_similarity(G: nx.Graph, seed: int = 27):
     edge_frequency = edge_frequency / edge_frequency.max()
 
     fig, ax = plt.subplots()
-    fig.set_size_inches((20, 10))
+    fig.set_size_inches((15, 12))
 
-    pos = nx.nx_agraph.graphviz_layout(H, prog='neato', args='-Goverlap=true -Gstart={}'.format(seed))
+    # Stretch points over complete axis
+    pos = nx.nx_agraph.graphviz_layout(H, prog='neato', args='-sep=.1 -Gepsilon=.00001 -Gstart={}'.format(seed))
     tmp = minmax_scale(np.asarray([pos[v] for v in node_list]))
-    for i in range(len(node_list)):
-        pos[node_list[i]] = (tmp[i, 0], tmp[i, 1])
 
-    nx.draw(H, pos=pos, ax=ax, node_list=node_list, node_color=color_map, node_size=node_frequency * 200,
+    # Stretch points in central cluster
+    center = tmp[0, :]
+    for i in range(1, len(node_list)):
+        p = tmp[i, :] - center
+        if abs(p[0]) < 0.05:
+            tmp[i, 0] = center[0] + 2 * p[0]
+            tmp[i, 1] = center[1] + 1.5 * p[1]
+
+    # Make space for legend
+    y_offset = 0.135
+    for i in range(len(node_list)):
+        pos[node_list[i]] = (tmp[i, 0], (tmp[i, 1]) * (1 - y_offset) + y_offset)
+
+    nx.draw(H, pos=pos, ax=ax, node_list=node_list, node_color=color_map, node_size=node_frequency * 300,
             edge_list=edges, edge_color=edge_frequency, edge_cmap=plt.get_cmap('binary'), edge_vmin=-0.1, arrowsize=5,
-            labels=labels, font_size=8)
+            labels=labels, font_size=12)
 
     handles = []
     labels = []
     for label, id in sorted(labels_mapping.items(), key=operator.itemgetter(1)):
-        handles.append(ax.text(x=0, y=0, s=id, c='w'))
+        handles.append(ax.text(x=0, y=0, s=id, c='w', fontsize=1))
 
         if label.endswith('Classifier'):
             labels.append(label[:-len('Classifier')])
@@ -452,8 +462,8 @@ def plot_pipeline_similarity(G: nx.Graph, seed: int = 27):
             h.set_font_properties(fp)
             return [h]
 
-    ax.legend(handles, labels, handler_map={type(handles[0]): TextHandler()}, ncol=2, fontsize=8)
-    # TODO remove ax.text patches again after legend is created
+    fig.legend(handles, labels, ncol=6, loc='lower center', borderaxespad=0.1, fontsize=11,
+               handler_map={type(handles[0]): TextHandler()})
 
     ax.set_ylim([-0.001, 1.005])
     ax.set_xlim([-0.001, 1.005])

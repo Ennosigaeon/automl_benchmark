@@ -84,6 +84,9 @@ def print_configurations(load_cluster: bool = True):
 
     good_datasets = {}
     for entry in total:
+        if entry[0] == 'All':
+            continue
+
         good_datasets[entry[0]] = set()
         for task, d in entry[1].items():
             for ls in d.values():
@@ -97,12 +100,12 @@ def print_configurations(load_cluster: bool = True):
             d.update({id: d.get(id, 0) + 1})
     good_datasets = d
     print(good_datasets)
-    print({k: v for k, v in good_datasets.items() if v >= 5})
+    print({k: v for k, v in good_datasets.items() if v >= 4})
 
     plot_configuration_similarity(total, cash=True)
 
 
-def print_pipelines(print_stats: bool = True, plot_pipeline: bool = False):
+def print_pipelines(print_stats: bool = False, plot_pipeline: bool = True):
     with open('assets/pipelines.pkl', 'rb') as f:
         raw_pipelines = pickle.load(f)
 
@@ -1332,7 +1335,7 @@ if __name__ == '__main__':
     # noinspection PyUnreachableCode
     if True:
         persistence = MongoPersistence('localhost', db='benchmarks')
-        # print_automl_framework_results()
-        # print_pipelines()
-        # print_cash_results(persistence)
+        print_automl_framework_results()
+        print_pipelines()
+        print_cash_results(persistence)
         print_configurations()
