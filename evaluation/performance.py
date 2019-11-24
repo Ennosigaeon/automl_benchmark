@@ -19,6 +19,7 @@ from util.mean_shift import CustomMeanShift, gower_distances
 
 
 def print_configurations(load_cluster: bool = True):
+    print('#####\nprint_configurations\n#####')
     if load_cluster:
         with open('assets/config_clusters.pkl', 'rb') as f:
             total: List = pickle.load(f)
@@ -105,7 +106,8 @@ def print_configurations(load_cluster: bool = True):
     plot_configuration_similarity(total, cash=True)
 
 
-def print_pipelines(print_stats: bool = False, plot_pipeline: bool = True):
+def print_pipelines(print_stats: bool = True, plot_pipeline: bool = True):
+    print('#####\nprint_pipelines\n#####')
     with open('assets/pipelines.pkl', 'rb') as f:
         raw_pipelines = pickle.load(f)
 
@@ -161,6 +163,7 @@ def print_pipelines(print_stats: bool = False, plot_pipeline: bool = True):
             'ZeroCount': 1
         }
 
+        print('### Pipeline Length ###')
         for key, value in raw_pipelines.items():
             l = sum([len(p) for p in value]) / len(value)
             print(key, l)
@@ -178,8 +181,8 @@ def print_pipelines(print_stats: bool = False, plot_pipeline: bool = True):
                 token_pipelines[key][-1] = ''.join(token_pipelines[key][-1])
                 generalized_token_pipeline[key][-1] = ''.join(generalized_token_pipeline[key][-1])
 
-        print(algo_mapping.keys())
-        print('\n\n')
+        print('\n\n### Used Algorithms ###')
+        print(list(algo_mapping.keys()))
 
         def distance(dict, key1: str, key2: str = None):
             import Levenshtein
@@ -197,6 +200,7 @@ def print_pipelines(print_stats: bool = False, plot_pipeline: bool = True):
                     d[i][j] = Levenshtein.ratio(list1[i], list2[j])
             print(key1, key2, d.mean(), d.std())
 
+        print('\n\n### Pipeline Similarity ###')
         for i in token_pipelines.keys():
             for j in token_pipelines.keys():
                 distance(token_pipelines, i, j)
@@ -234,6 +238,7 @@ def print_pipelines(print_stats: bool = False, plot_pipeline: bool = True):
 
 
 def print_cash_results(persistence: MongoPersistence):
+    print('#####\nprint_cash_results\n#####')
     tasks = scripts.cash_tasks
     datasets = scripts.cash_datasets
 
@@ -634,6 +639,7 @@ def print_cash_results(persistence: MongoPersistence):
 
 
 def print_automl_framework_results():
+    print('#####\nprint_automl_framework_results\n#####')
     datasets = scripts.framework_datasets
     tasks = scripts.framework_tasks
 
@@ -1278,7 +1284,6 @@ def print_automl_framework_results():
                 if mean[i] == maximum:
                     print('\\B ', end='')
                 print('{:.5f}'.format(mean[i]).zfill(4), end=' ')
-                # print('\\(\\pm\\)', '{:.3f}'.format(std[i]).zfill(4), end='')
             if i == len(mean) - 1:
                 print('\t\\\\')
             else:
@@ -1319,23 +1324,8 @@ def print_automl_framework_results():
 if __name__ == '__main__':
     plot_successive_halving()
 
-    # noinspection PyUnreachableCode
-    if False:
-        persistence = MongoPersistence('localhost', db='synthetic')
-        for b in [benchmark.Levy(), benchmark.Branin(), benchmark.Hartmann6(), benchmark.Rosenbrock10D(),
-                  benchmark.Camelback(), benchmark.Rosenbrock20D()]:
-            res = persistence.load_all(b)
-            print_best_incumbent(res)
-            plot_incumbent_performance(res)
-            plot_method_overhead(res)
-
-        res = persistence.load_all(benchmark.Branin())
-        plot_evaluated_configurations(res)
-
-    # noinspection PyUnreachableCode
-    if True:
-        persistence = MongoPersistence('localhost', db='benchmarks')
-        print_automl_framework_results()
-        print_pipelines()
-        print_cash_results(persistence)
-        print_configurations()
+    persistence = MongoPersistence('localhost', db='benchmarks')
+    print_automl_framework_results()
+    print_pipelines()
+    print_cash_results(persistence)
+    print_configurations()
