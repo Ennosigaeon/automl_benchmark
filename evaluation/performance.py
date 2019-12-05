@@ -18,10 +18,10 @@ from evaluation.visualization import plot_cash_incumbent, plot_overall_performan
 from util.mean_shift import CustomMeanShift, gower_distances
 
 
-def print_configurations(load_cluster: bool = True):
+def print_configurations(load_cluster: bool = False, bandwidth: float = 0.25):
     print('#####\nprint_configurations\n#####')
     if load_cluster:
-        with open('assets/config_clusters.pkl', 'rb') as f:
+        with open('assets/config_clusters-{}.pkl'.format(bandwidth), 'rb') as f:
             total: List = pickle.load(f)
     else:
         with open('assets/cash_configs.pkl', 'rb') as f:
@@ -57,7 +57,7 @@ def print_configurations(load_cluster: bool = True):
                     nan_mask = np.isnan(X)
                     X[nan_mask] = np.random.uniform(0, 1, size=np.count_nonzero(nan_mask))
 
-                    ms = CustomMeanShift(bandwidth=0.25)
+                    ms = CustomMeanShift(bandwidth=bandwidth)
                     # ms = MeanShift()
                     ms.fit(X)
 
@@ -70,7 +70,6 @@ def print_configurations(load_cluster: bool = True):
                         score = 1 - cdist(cluster_centers, cluster_centers, metric=gower_distances).mean()
                     else:
                         score = metrics.silhouette_score(X, labels, metric=gower_distances)
-
                     for lab in np.unique(labels):
                         mask = labels == lab
 
@@ -80,8 +79,8 @@ def print_configurations(load_cluster: bool = True):
                 distances[task] = {k: v for k, v in values.items() if len(v) > 0}
             total.append((filter, distances))
 
-            with open('assets/config_clusters.pkl', 'wb') as f:
-                pickle.dump(total, f)
+        with open('assets/config_clusters-{}.pkl'.format(bandwidth), 'wb') as f:
+            pickle.dump(total, f)
 
     good_datasets = {}
     for entry in total:
@@ -103,7 +102,7 @@ def print_configurations(load_cluster: bool = True):
     print(good_datasets)
     print({k: v for k, v in good_datasets.items() if v >= 4})
 
-    plot_configuration_similarity(total, cash=True)
+    plot_configuration_similarity(total, cash=True, bandwidth=bandwidth)
 
 
 def print_pipelines(print_stats: bool = True, plot_pipeline: bool = True):
