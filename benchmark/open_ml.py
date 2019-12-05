@@ -1,14 +1,14 @@
 import multiprocessing
 import os
 import time
-from typing import Generator
+from typing import Generator, Optional
 
 import math
 import numpy as np
 import openml
 import pandas as pd
 from hpolib.util import rng_helper
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, KFold
 from sklearn.preprocessing import LabelEncoder
 
 import util.logger
@@ -18,14 +18,13 @@ from config import BaseConverter, NoopConverter, MetaConfigCollection
 logger = util.logger.get()
 
 
-class OpenMLHoldoutDataManager():
+class OpenMLDataManager():
     def __init__(self, openml_task_id: int, rng=None):
-        self.X_train = None
-        self.y_train = None
-        self.X_test = None
-        self.y_test = None
+        self.X = None
+        self.y = None
         self.categorical = None
         self.names = None
+        self.folds = []
 
         self.save_to = os.path.expanduser('~/OpenML')
         self.task_id = openml_task_id
@@ -42,7 +41,7 @@ class OpenMLHoldoutDataManager():
         openml.config.apikey = '610344db6388d9ba34f6db45a3cf71de'
         openml.config.set_cache_directory(self.save_to)
 
-    def load(self, test_size: float = 0.3) -> 'OpenMLHoldoutDataManager':
+    def load(self) -> 'OpenMLDataManager':
         '''
         Loads dataset from OpenML in _config.data_directory.
         Downloads data if necessary.
@@ -79,27 +78,48 @@ class OpenMLHoldoutDataManager():
 
         X = X.values
         y = y.values.__array__()
-        y = LabelEncoder().fit_transform(y)
-
-        X = X.astype(np.float64)
-
-        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(X, y, test_size=test_size)
+        self.y = LabelEncoder().fit_transform(y)
+        self.X = X.astype(np.float64)
         self.categorical = categorical
+        return self
+
+
+class OpenMLHoldoutDataManager(OpenMLDataManager):
+
+    def load(self, test_size: float = 0.3) -> 'OpenMLHoldoutDataManager':
+        super().load()
+        X_train, X_test, y_train, y_test = train_test_split(self.X, self.y, test_size=test_size)
+        ls = [X_train, y_train, X_test, y_test]
+        self.folds.append(ls)
+        return self
+
+
+class OpenMLCVDataManager(OpenMLDataManager):
+
+    def load(self, n_splits: int = 4) -> 'OpenMLCVDataManager':
+        super().load()
+        kf = KFold(n_splits=n_splits)
+        for train_index, test_index in kf.split(self.X):
+            X_train, X_test = self.X[train_index], self.X[test_index]
+            y_train, y_test = self.y[train_index], self.y[test_index]
+
+            ls = [X_train, y_train, X_test, y_test]
+            self.folds.append(ls)
         return self
 
 
 class OpenMLBenchmark(AbstractBenchmark):
 
-    def __init__(self, task_id: int, test_size: float = 0.3, load: bool = True):
+    def __init__(self, task_id: int, test_size: Optional[float] = 0.3, n_folds: Optional[int] = 4, load: bool = True):
         super().__init__()
         self.task_id = task_id
 
         if load:
-            data = OpenMLHoldoutDataManager(task_id).load(test_size)
-            self.X_train = data.X_train
-            self.y_train = data.y_train
-            self.X_test = data.X_test
-            self.y_test = data.y_test
+            if test_size is not None:
+                data = OpenMLHoldoutDataManager(task_id).load(test_size)
+            else:
+                data = OpenMLCVDataManager(task_id).load(n_folds)
+            self.folds = data.folds
             self.categorical = data.categorical
             self.column_names = data.names
 
@@ -107,28 +127,31 @@ class OpenMLBenchmark(AbstractBenchmark):
         start_time = time.time()
         manager = multiprocessing.Manager()
         score = manager.Value('d', 1.0)
+        avg_score = 0
 
         # logger.debug('Testing configuration {}'.format(configuration))
+        for fold in self.folds:
+            X_train, y_train, X_test, y_test = fold
+            self.rng = rng_helper.get_rng(rng=seed, self_rng=self.rng)
 
-        self.rng = rng_helper.get_rng(rng=seed, self_rng=self.rng)
+            shuffle = self.rng.permutation(X_train.shape[0])
+            size = int(budget * X_train.shape[0])
 
-        shuffle = self.rng.permutation(self.X_train.shape[0])
-        size = int(budget * self.X_train.shape[0])
+            X_train = X_train[shuffle[:size]]
+            y_train = y_train[shuffle[:size]]
 
-        X_train = self.X_train[shuffle[:size]]
-        y_train = self.y_train[shuffle[:size]]
+            p = multiprocessing.Process(target=self._fit_and_score, args=(configuration, X_train, y_train, score))
+            p.start()
+            p.join(30)
 
-        p = multiprocessing.Process(target=self._fit_and_score, args=(configuration, X_train, y_train, score))
-        p.start()
-        p.join(30)
-
-        if p.is_alive():
-            logger.debug('Abort fitting after timeout')
-            p.terminate()
-            p.join()
+            if p.is_alive():
+                logger.debug('Abort fitting after timeout')
+                p.terminate()
+                p.join()
+            avg_score += score.value
 
         c = time.time() - start_time
-        return {'function_value': score.value, 'cost': c, 'start': start_time, 'end': start_time + c}
+        return {'function_value': avg_score / len(self.folds), 'cost': c, 'start': start_time, 'end': start_time + c}
 
     def _fit_and_score(self, configuration, X_train, y_train, score):
         try:

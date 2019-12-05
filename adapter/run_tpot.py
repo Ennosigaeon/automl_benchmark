@@ -16,22 +16,22 @@ def setup():
 
 
 def main(bm: OpenMLBenchmark, timeout: int, run_timeout: int, jobs: int) -> float:
-    X_train = bm.X_train
-    y_train = bm.y_train
-    X_test = bm.X_test
-    y_test = bm.y_test
+    avg_score = 0
+    for fold in bm.folds:
+        setup()
+        X_train, y_train, X_test, y_test = fold
 
-    pipeline_optimizer = TPOTClassifier(
-        max_time_mins=timeout / 60,
-        max_eval_time_mins=run_timeout / 60,
-        scoring='accuracy',
-        n_jobs=jobs,
-        verbosity=1
-    )
-    pipeline_optimizer.fit(X_train, y_train)
-    print(pipeline_optimizer.fitted_pipeline_)
-    score = 1 - pipeline_optimizer.score(X_test, y_test)
-    return score
+        pipeline_optimizer = TPOTClassifier(
+            max_time_mins=timeout / 60,
+            max_eval_time_mins=run_timeout / 60,
+            scoring='accuracy',
+            n_jobs=jobs,
+            verbosity=1
+        )
+        pipeline_optimizer.fit(X_train, y_train)
+        print(pipeline_optimizer.fitted_pipeline_)
+        avg_score += 1 - pipeline_optimizer.score(X_test, y_test)
+    return avg_score / len(bm.folds)
 
 
 # noinspection PyUnresolvedReferences
