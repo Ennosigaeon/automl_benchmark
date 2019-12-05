@@ -251,17 +251,23 @@ def plot_configuration_similarity(lists: List, cash: bool = False, bandwidth: fl
     axes = util.flatten(axes)
 
     for i, d in enumerate(lists):
-        scatter(axes[i], d[1], d[0])
+        # Skip 'All' view
+        if i == 0:
+            continue
+        scatter(axes[i - 1], d[1], d[0])
+    fig.delaxes(axes[-1])
     handles = []
     labels = []
-    for i in np.arange(0.25, 2.1, 0.25):
+    for i in np.arange(0.5, 6.1, 0.5):
         labels.append(i)
         handles.append(plt.scatter([], [], s=i * base_size, edgecolors='none', c=FACE_COLOR))
-    fig.legend(handles, labels, ncol=len(labels), loc='lower center', borderaxespad=0.05,
-               fontsize=6)
+
+    fig.text(0.72, 0.3, 'Normalized Performance', fontsize=6)
+    fig.legend(handles, labels, ncol=2, borderaxespad=0.05, bbox_to_anchor=(0.87, 0.29), fontsize=6)
 
     fig.tight_layout()
-    fig.subplots_adjust(hspace=0.3, left=0.05, right=0.99, bottom=0.09, top=0.98)
+    fig.subplots_adjust(hspace=0.3, left=0.05, right=0.99, bottom=0.06, top=0.98)
+    # fig.show()
 
     if cash:
         plt.savefig('evaluation/plots/config-similarity-cash-{}.pdf'.format(bandwidth))
