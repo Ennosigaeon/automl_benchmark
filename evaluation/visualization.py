@@ -6,7 +6,6 @@ from typing import List, Dict
 
 import math
 import matplotlib
-import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
@@ -15,7 +14,6 @@ from matplotlib.legend_handler import HandlerBase
 from sklearn.preprocessing import minmax_scale
 
 import util
-from adapter.base import BenchmarkResult
 from evaluation.scripts import Dataset
 
 FACE_COLOR = '#1f77b4'
@@ -212,7 +210,7 @@ def plot_overall_performance(x: List[List[List[float]]], labels: list, cash: boo
         plt.savefig('evaluation/plots/performance-automl-frameworks.pdf', bbox_inches='tight')
 
 
-def plot_configuration_similarity(lists: List, cash: bool = False):
+def plot_configuration_similarity(lists: List, cash: bool = False, bandwidth: float = None):
     algorithms = set()
     for dic in lists:
         algorithms.update(util.flatten([i.keys() for i in dic[1].values()]))
@@ -237,7 +235,7 @@ def plot_configuration_similarity(lists: List, cash: bool = False):
 
             ax.scatter(x, y, label=algo.split('.')[-1], alpha=0.5, linewidths=0, s=s, c=FACE_COLOR)
 
-        ax.set_ylim([0, 1.05])
+        ax.set_ylim([-0.1, 1.05])
         ax.set_xlim([-0.25, 10.25])
         ax.set_title(title, fontsize=6, pad=2)
         ax.set_xlabel('Instances per Cluster', fontsize=6, labelpad=1)
@@ -266,7 +264,7 @@ def plot_configuration_similarity(lists: List, cash: bool = False):
     fig.subplots_adjust(hspace=0.3, left=0.05, right=0.99, bottom=0.09, top=0.98)
 
     if cash:
-        plt.savefig('evaluation/plots/config-similarity-cash.pdf')
+        plt.savefig('evaluation/plots/config-similarity-cash-{}.pdf'.format(bandwidth))
     else:
         plt.savefig('evaluation/plots/config-similarity-frameworks.pdf')
 
