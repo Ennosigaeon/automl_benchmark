@@ -497,6 +497,7 @@ def print_cash_results(persistence: MongoPersistence):
     config_space = MetaConfigCollection.from_json('assets/classifier.json')
 
     final_configs = {}
+    runtime = []
 
     for idx, task in enumerate(tasks):
         bm = OpenMLBenchmark(task, load=False)
@@ -508,6 +509,7 @@ def print_cash_results(persistence: MongoPersistence):
         incumbents = {}
         for res in results:
             for solver in res.solvers:
+                runtime.append(solver.end - solver.start)
                 tmp = solver.as_numpy()[1]
                 algorithm = solver.algorithm
                 if algorithm == 'RoBo gp':
@@ -559,6 +561,7 @@ def print_cash_results(persistence: MongoPersistence):
             ls[key][3].append([1 - v for v in value])
             ls[key][4].append([(v - minimum[idx]) / (maximum[idx] - minimum[idx]) for v in value])
 
+    print(np.array(runtime).mean())
     with open('assets/cash_configs.pkl', 'wb') as f:
         pickle.dump(final_configs, f)
 
