@@ -1,10 +1,10 @@
 import datetime
 import itertools
+import multiprocessing
 import sys
 import time
-import warnings
-
 import traceback
+import warnings
 
 import humanfriendly
 
@@ -14,6 +14,63 @@ from benchmark import OpenMLBenchmark
 timeout = 3600  # in seconds
 run_timeout = 600  # in seconds
 jobs = 4
+
+
+def run(task: int, conn) -> None:
+    try:
+        print('##\nIteration {} at {}\n##'.format(i, datetime.datetime.now().time()))
+        bm = OpenMLBenchmark(task)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+
+            if algorithm == 'atm':
+                if run_atm.skip(task):
+                    s = -1
+                else:
+                    s = run_atm.main(bm, timeout, jobs)
+            elif algorithm == 'random':
+                if run_auto_sklearn.skip(task):
+                    s = -1
+                else:
+                    s = run_auto_sklearn.main(bm, timeout, run_timeout, jobs, random=True)
+            elif algorithm == 'auto-sklearn':
+                if run_auto_sklearn.skip(task):
+                    s = -1
+                else:
+                    s = run_auto_sklearn.main(bm, timeout, run_timeout, jobs, random=False)
+            elif algorithm == 'dummy':
+                if run_baseline.skip(task):
+                    s = -1
+                else:
+                    s = run_baseline.main(bm, dummy=True)
+            elif algorithm == 'rf':
+                if run_baseline.skip(task):
+                    s = -1
+                else:
+                    s = run_baseline.main(bm, dummy=False)
+            elif algorithm == 'h2o':
+                if run_h2o.skip(task):
+                    s = -1
+                else:
+                    s = run_h2o.main(bm, timeout, run_timeout, jobs)
+            elif algorithm == 'hpsklearn':
+                if run_hpsklearn.skip(task):
+                    s = -1
+                else:
+                    s = run_hpsklearn.main(bm, timeout, run_timeout)
+            elif algorithm == 'tpot':
+                if run_tpot.skip(task):
+                    s = -1
+                else:
+                    s = run_tpot.main(bm, timeout, run_timeout, jobs)
+            else:
+                raise ValueError('Unknown algorithm {}'.format(algorithm))
+            conn.send(s)
+    except Exception:
+        traceback.print_exc()
+        conn.send(1)
+
 
 if __name__ == '__main__':
     algorithm = sys.argv[1]
@@ -37,62 +94,29 @@ if __name__ == '__main__':
         print('Using all tasks')
         task_ids = list(itertools.chain.from_iterable(task_ids))
 
+    recv_end, send_end = multiprocessing.Pipe(False)
     res = []
     for task in task_ids:
         print('#######\nStarting task {}\n#######'.format(task))
         res.append([])
         for i in range(5):
             try:
-                print('##\nIteration {} at {}\n##'.format(i, datetime.datetime.now().time()))
                 start = time.time()
-                bm = OpenMLBenchmark(task)
 
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore", category=RuntimeWarning)
+                p = multiprocessing.Process(target=run, args=(task, send_end))
+                p.start()
 
-                    if algorithm == 'atm':
-                        if run_atm.skip(task):
-                            continue
+                p.join(timeout * 1.5)
 
-                        score = run_atm.main(bm, timeout, jobs)
-                    if algorithm == 'random':
-                        if run_auto_sklearn.skip(task):
-                            continue
+                if p.is_alive():
+                    print('Grace period exceed. Stopping benchmark.')
+                    p.terminate()
+                    p.join()
+                    score = 1
+                else:
+                    score = recv_end.recv()
 
-                        score = run_auto_sklearn.main(bm, timeout, run_timeout, jobs, random=True)
-                    elif algorithm == 'auto-sklearn':
-                        if run_auto_sklearn.skip(task):
-                            continue
-
-                        score = run_auto_sklearn.main(bm, timeout, run_timeout, jobs, random=False)
-                    elif algorithm == 'dummy':
-                        if run_baseline.skip(task):
-                            continue
-
-                        score = run_baseline.main(bm, dummy=True)
-                    elif algorithm == 'rf':
-                        if run_baseline.skip(task):
-                            continue
-
-                        score = run_baseline.main(bm, dummy=False)
-                    elif algorithm == 'h2o':
-                        if run_h2o.skip(task):
-                            continue
-
-                        score = run_h2o.main(bm, timeout, run_timeout, jobs)
-                    elif algorithm == 'hpsklearn':
-                        if run_hpsklearn.skip(task):
-                            continue
-
-                        score = run_hpsklearn.main(bm, timeout, run_timeout)
-                    elif algorithm == 'tpot':
-                        if run_tpot.skip(task):
-                            continue
-
-                        score = run_tpot.main(bm, timeout, run_timeout, jobs)
-                    else:
-                        raise ValueError('Unknown algorithm {}'.format(algorithm))
-
+                if score != -1:
                     res[-1].append(score)
                     print('Misclassification Rate', score)
                     print('Duration', humanfriendly.format_timespan(time.time() - start))
