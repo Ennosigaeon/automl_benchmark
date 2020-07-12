@@ -9,7 +9,8 @@ from scipy.stats import wilcoxon
 from sklearn import metrics
 
 import util
-from benchmark import OpenMLBenchmark
+from adapter.base import BenchmarkResult
+from benchmark import OpenMLBenchmark, Levy, Branin, Hartmann6, Rosenbrock10D, Camelback
 from config import CONVERTER_MAPPING, MetaConfigCollection
 from config.vectorizer import ConfigVectorizer
 from evaluation import scripts
@@ -1372,11 +1373,45 @@ def print_automl_framework_results():
     plot_pairwise_performance(average[:, 2:], labels[2:], cash=False)
 
 
+def print_best_incumbent(ls: List[BenchmarkResult], iteration: int = -1):
+    bm = ls[0].benchmark
+    print(bm.get_meta_information()['name'])
+
+    algorithms = ['Grid Search', 'Random Search', 'RoBo gp', 'BTB', 'hyperopt', 'SMAC', 'BOHB', 'Optunity']
+    print(algorithms)
+
+    x = [[] for _ in range(len(algorithms))]
+    for solver in sum([b.solvers for b in ls], []):
+        if len(x[algorithms.index(solver.algorithm)]) < 9:
+            x[algorithms.index(solver.algorithm)].append(
+                abs(solver.incumbents[iteration].score - bm.get_meta_information()['f_opt'])
+            )
+
+    x = np.array(x)
+    minimum = np.min(x.mean(axis=1))
+    min_idx = np.argmin(x.mean(axis=1))
+    for i in range(len(algorithms)):
+        if x.mean(axis=1)[i] == minimum:
+            print('\\B ', end='')
+        pvalue = wilcoxon(x[min_idx, :], x[i, :]).pvalue
+        if pvalue < 0.05:
+            print('\\underline{{{:2.5f}}}'.format(x.mean(axis=1)[i]))
+        else:
+            print('{:2.5f}'.format(x.mean(axis=1)[i]))
+    print()
+
+
+def print_synthetic_results(persistence):
+    for b in [Levy(), Branin(), Hartmann6(), Rosenbrock10D(), Camelback()]:
+        res = persistence.load_all(b)
+        print_best_incumbent(res)
+
+
 if __name__ == '__main__':
     plot_successive_halving()
 
-    persistence = MongoPersistence('localhost', db='benchmarks')
+    print_synthetic_results(MongoPersistence('localhost', db='synthetic'))
     print_automl_framework_results()
     print_pipelines()
-    print_cash_results(persistence)
+    print_cash_results(MongoPersistence('localhost', db='benchmarks'))
     print_configurations()
