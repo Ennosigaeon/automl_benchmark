@@ -12,6 +12,7 @@ import numpy as np
 import matplotlib.transforms as mtrans
 from matplotlib import cm, patches
 from matplotlib.legend_handler import HandlerBase
+from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 from sklearn.preprocessing import minmax_scale
 
 import util
@@ -21,19 +22,34 @@ FACE_COLOR = '#1f77b4'
 AXIS_COLOR = '#b0b0b0'
 
 
-def plot_cash_incumbent(x, labels: list):
+def plot_cash_incumbent(x, x_std, labels: list):
     matplotlib.rcParams.update({'font.size': 12})
 
     fig, ax = plt.subplots()
     fig.set_size_inches(20, 8)
-    fig.set_dpi(250)
+    fig.set_dpi(100)
+
+    axins = ax.inset_axes([0.66, 0.525, 0.325, 0.31])
+
+    print('\t& '.join(['\\name{{{}}}'.format(labels[i]) for i in range(len(labels))]), end='\\\\\n')
+    print('\t& '.join(['{:.4f}'.format(x_std[:, :, -1].mean(axis=1)[i]) for i in range(len(labels))]), end='\\\\\n')
+    print('\t& '.join(['{:.4f}'.format(x[:, :, -1].std(axis=1)[i]) for i in range(len(labels))]), end='\\\\\n')
 
     for idx in range(len(labels)):
-        value = x[idx]
-        mean = value.mean(axis=0)
-        std = value.std(axis=0)
-        ax.plot(np.arange(1, len(mean) + 1, 1), mean, label=labels[idx], linewidth=2.0)
-        # ax.fill_between(np.arange(1, len(mean) + 1, 1), mean - std, mean + std, alpha=0.25)
+        mean = x[idx].mean(axis=0)
+        x_tmp = np.arange(1, len(mean) + 1, 1)
+        ax.plot(x_tmp, mean, label=labels[idx], linewidth=2.0)
+        axins.plot(x_tmp, mean, label=labels[idx], linewidth=2.0)
+
+    # sub region of the original image
+    x1, x2, y1, y2 = 75, 325, 1.28, 1.34
+    axins.set_xlim(x1, x2)
+    axins.set_ylim(y1, y2)
+    # axins.set_xscale('log')
+    # axins.set_xticklabels([])
+    axins.set_yticks([1.28, 1.3, 1.32, 1.34])
+
+    mark_inset(ax, axins, loc1=1, loc2=2, fc="none", ec="0.5")
 
     # ax.set_yscale('log')
     ax.set_xscale('log')

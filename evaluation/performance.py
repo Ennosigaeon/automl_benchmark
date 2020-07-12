@@ -485,14 +485,14 @@ def print_cash_results(persistence: MongoPersistence):
     maximum = 1 - np.array(rf_baseline).mean(axis=1)
 
     ls = OrderedDict()
-    ls['Grid Search'] = [[], [], [], [], []]
-    ls['Random Search'] = [[], [], [], [], []]
-    ls['SMAC'] = [[], [], [], [], []]
-    ls['BOHB'] = [[], [], [], [], []]
-    ls['Optunity'] = [[], [], [], [], []]
-    ls['hyperopt'] = [[], [], [], [], []]
-    ls['RoBO'] = [[], [], [], [], []]
-    ls['BTB'] = [[], [], [], [], []]
+    ls['Grid Search'] = [[], [], [], [], [], [], []]
+    ls['Random Search'] = [[], [], [], [], [], [], []]
+    ls['SMAC'] = [[], [], [], [], [], [], []]
+    ls['BOHB'] = [[], [], [], [], [], [], []]
+    ls['Optunity'] = [[], [], [], [], [], [], []]
+    ls['hyperopt'] = [[], [], [], [], [], [], []]
+    ls['RoBO'] = [[], [], [], [], [], [], []]
+    ls['BTB'] = [[], [], [], [], [], [], []]
 
     config_space = MetaConfigCollection.from_json('assets/classifier.json')
 
@@ -555,11 +555,16 @@ def print_cash_results(persistence: MongoPersistence):
             if len(value) < 10:
                 print('{}:\t\t{}'.format(key, len(value)))
 
+            normalized = 1 - np.array(inc[key])
+            normalized = (normalized - minimum[idx]) / (maximum[idx] - minimum[idx])
+
             ls[key][0].append(x.mean())
             ls[key][1].append(x.std())
-            ls[key][2].append(np.array(inc[key]).mean(axis=0))
-            ls[key][3].append([1 - v for v in value])
-            ls[key][4].append([(v - minimum[idx]) / (maximum[idx] - minimum[idx]) for v in value])
+            ls[key][2].append(normalized.mean(axis=0))
+            ls[key][3].append(normalized.std(axis=0))
+            ls[key][4].append([1 - v for v in value])
+            ls[key][5].append([(v - minimum[idx]) / (maximum[idx] - minimum[idx]) for v in value])
+            ls[key][6].append(x[0:10])
 
     print(np.array(runtime).mean())
     with open('assets/cash_configs.pkl', 'wb') as f:
@@ -620,21 +625,19 @@ def print_cash_results(persistence: MongoPersistence):
             print('\t&\t', end='')
     print('\n\n\n')
 
-    results = [v[3] for v in ls.values()]
-    normalized = [v[4] for v in ls.values()]
-
-    # Normalize values. Use precision to have higher value => better result
-    max_tile = np.tile(maximum, (iterations, 1)).T
-    min_tile = np.tile(minimum, (iterations, 1)).T
+    results = [v[4] for v in ls.values()]
+    normalized = [v[5] for v in ls.values()]
 
     incumbents = []
+    incumbents_std = []
     for key in labels:
-        x2 = 1 - np.array(ls[key][2])
-        n2 = (x2 - min_tile) / (max_tile - min_tile)
-        incumbents.append(n2)
+        incumbents.append(np.array(ls[key][2]))
+        incumbents_std.append(np.array(ls[key][3]))
 
     incumbents = np.array(incumbents)
-    plot_cash_incumbent(incumbents, list(labels))
+    incumbents_std = np.array(incumbents_std)
+
+    plot_cash_incumbent(incumbents, incumbents_std, list(labels))
     plot_pairwise_performance(average[:, 3:], list(labels)[1:], cash=True)
     plot_overall_performance(normalized, list(labels), cash=True)
     plot_dataset_performance(results, minimum, maximum, list(labels), tasks, cash=True)
