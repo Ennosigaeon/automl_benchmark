@@ -3,12 +3,6 @@ import pickle
 
 import numpy as np
 import openml
-from atm import Model
-from atm.utilities import base_64_to_object
-
-from adapter import run_atm, run_auto_sklearn, run_h2o, run_hpsklearn, run_tpot
-from benchmark import OpenMLBenchmark
-from evaluation.base import MongoPersistence
 
 all_tasks = [3, 6, 11, 12, 14, 15, 16, 18, 20, 21, 22, 23, 24, 28, 29, 31, 32, 36, 37, 41, 43, 45, 49, 53, 58, 219,
              2074, 2079, 3021, 3022, 3481, 3485, 3492, 3493, 3494, 3510, 3512, 3543, 3549, 3560, 3561, 3567, 3573, 3889,
@@ -75,6 +69,8 @@ class Dataset:
 
 
 def merge_cash_results():
+    from benchmark import OpenMLBenchmark
+    from evaluation.base import MongoPersistence
     tasks = [146212]
     for id in tasks:
         print(id)
@@ -140,6 +136,9 @@ def print_data_set_stats():
 
 
 def load_atm_results():
+    from atm.utilities import base_64_to_object
+    from atm import Model
+
     def load(c):
         result = {}
         for task, res, hyper, cat, method, const in c.execute('''
@@ -200,6 +199,8 @@ def load_atm_results():
 
 
 def load_file_results(base_dir: str, algorithm: str):
+    from adapter import run_atm, run_auto_sklearn, run_h2o, run_hpsklearn, run_tpot
+
     def reject_outliers(data):
         return data[abs(data - np.mean(data)) < 0.2]
 
