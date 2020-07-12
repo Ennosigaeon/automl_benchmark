@@ -8,7 +8,6 @@ import warnings
 
 import humanfriendly
 
-from adapter import run_auto_sklearn, run_atm, run_baseline, run_h2o, run_hpsklearn, run_tpot
 from benchmark import OpenMLBenchmark
 
 timeout = 3600  # in seconds
@@ -25,41 +24,49 @@ def run(task: int, conn) -> None:
             warnings.simplefilter("ignore", category=RuntimeWarning)
 
             if algorithm == 'atm':
+                from adapter import run_atm
                 if run_atm.skip(task):
                     s = -1
                 else:
                     s = run_atm.main(bm, timeout, jobs)
             elif algorithm == 'random':
+                from adapter import run_auto_sklearn
                 if run_auto_sklearn.skip(task):
                     s = -1
                 else:
                     s = run_auto_sklearn.main(bm, timeout, run_timeout, jobs, random=True)
             elif algorithm == 'auto-sklearn':
+                from adapter import run_auto_sklearn
                 if run_auto_sklearn.skip(task):
                     s = -1
                 else:
                     s = run_auto_sklearn.main(bm, timeout, run_timeout, jobs, random=False)
             elif algorithm == 'dummy':
+                from adapter import run_baseline
                 if run_baseline.skip(task):
                     s = -1
                 else:
                     s = run_baseline.main(bm, dummy=True)
             elif algorithm == 'rf':
+                from adapter import run_baseline
                 if run_baseline.skip(task):
                     s = -1
                 else:
                     s = run_baseline.main(bm, dummy=False)
             elif algorithm == 'h2o':
+                from adapter import run_h2o
                 if run_h2o.skip(task):
                     s = -1
                 else:
                     s = run_h2o.main(bm, timeout, run_timeout, jobs)
             elif algorithm == 'hpsklearn':
+                from adapter import run_hpsklearn
                 if run_hpsklearn.skip(task):
                     s = -1
                 else:
                     s = run_hpsklearn.main(bm, timeout, run_timeout)
             elif algorithm == 'tpot':
+                from adapter import run_tpot
                 if run_tpot.skip(task):
                     s = -1
                 else:
