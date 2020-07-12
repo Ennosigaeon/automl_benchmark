@@ -9,6 +9,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
+import matplotlib.transforms as mtrans
 from matplotlib import cm, patches
 from matplotlib.legend_handler import HandlerBase
 from sklearn.preprocessing import minmax_scale
@@ -115,7 +116,7 @@ def plot_dataset_performance(values, minimum, maximum, labels: list, tasks: list
         axes[i].set_yticks(np.arange(rows))
         axes[i].set_xticks([0.2, 0.4, 0.6, 0.8, 1.0])
         axes[i].tick_params(axis=u'both', which=u'both', length=0)
-        axes[i].set_yticklabels([tasks[idx] for idx in plot_idx[i * rows: (i + 1) * rows]])
+        axes[i].set_yticklabels([datasets[tasks[idx]].name[:15] for idx in plot_idx[i * rows: (i + 1) * rows]])
         axes[i].set_ylim([-0.5, rows - 0.5])
         axes[i].tick_params(axis='both', which='major', labelsize=8)
     axes[1].yaxis.tick_right()
@@ -150,6 +151,21 @@ def plot_dataset_performance(values, minimum, maximum, labels: list, tasks: list
     fig.subplots_adjust(bottom=0.04)
     fig.legend(handles, labels_txt, ncol=len(labels) // 2, loc='lower center', borderaxespad=0.1,
                fontsize=8)
+
+    # Get the bounding boxes of the axes including text decorations
+    get_bbox = lambda ax: ax.get_tightbbox(fig.canvas.get_renderer()).transformed(fig.transFigure.inverted())
+    bboxes = np.array(list(map(get_bbox, axes.flat)), mtrans.Bbox).reshape(axes.shape)
+
+    # Get the minimum and maximum extent, get the coordinate half-way between those
+    xmax = np.array(list(map(lambda b: b.x1, bboxes.flat))).min()
+    xmin = np.array(list(map(lambda b: b.x0, bboxes.flat))).max()
+    xs = np.mean([xmax, xmin])
+
+    ymax = np.array(list(map(lambda b: b.y1, bboxes.flat))).max()
+    ymin = np.array(list(map(lambda b: b.y0, bboxes.flat))).min()
+
+    line = plt.Line2D([xs, xs], [ymin, ymax], transform=fig.transFigure, color="black")
+    fig.add_artist(line)
 
     if cash:
         plt.savefig('evaluation/plots/performance-ds-cash.pdf', bbox_inches='tight')
