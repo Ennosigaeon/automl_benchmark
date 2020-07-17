@@ -603,7 +603,6 @@ def print_cash_results(persistence: MongoPersistence):
         max_idx = np.argmax(mean)
         significant = []
         for ls2 in raw_significance:
-            from scipy.stats import wilcoxon
             res = wilcoxon(raw_significance[max_idx], ls2)
             significant.append(res.pvalue < 0.05)
 
@@ -613,14 +612,13 @@ def print_cash_results(persistence: MongoPersistence):
         highest = np.max(mean)
         print(datasets[idx], '\t&\t', end='')
         for i in range(len(mean)):
-            if mean[i] == highest:
-                print('\\B ', end='')
-
             if significant[i]:
-                print('\\underline{{{:.4f}}}'.format(mean[i]).zfill(4), end=' ')
-            else:
                 print('{:.4f}'.format(mean[i]).zfill(4), end=' ')
-            # print('\\(\\pm\\)', '{:.3f}'.format(std[i]).zfill(4), end='')
+            elif mean[i] == highest:
+                print('\\B {:.4f}'.format(mean[i]).zfill(4), end=' ')
+            else:
+                print('\\ul{{{:.4f}}}'.format(mean[i]).zfill(4), end=' ')
+
             if i == len(mean) - 1:
                 print('\t\\\\ % {}'.format(tasks[idx]))
             else:
@@ -632,13 +630,14 @@ def print_cash_results(persistence: MongoPersistence):
     highest = np.max(average.mean(axis=0))
     max_idx = np.argmax(average.mean(axis=0))
     for i in range(len(average.mean(axis=0))):
-        if average.mean(axis=0)[i] == highest:
-            print('\\B ', end='')
         pvalue = wilcoxon(average[:, max_idx], average[:, i]).pvalue
         if pvalue < 0.05:
-            print('\\underline{{{:.4f}}}'.format(average.mean(axis=0)[i]).zfill(4), end=' ')
-        else:
             print('{:.4f}'.format(average.mean(axis=0)[i]).zfill(5), end=' ')
+        elif average.mean(axis=0)[i] == highest:
+            print('\\B{:.4f}'.format(average.mean(axis=0)[i]).zfill(5), end=' ')
+        else:
+            print('\\ul{{{:.4f}}}'.format(average.mean(axis=0)[i]).zfill(4), end=' ')
+
         if i == len(average.mean(axis=0)) - 1:
             print('\t\\\\')
         else:
@@ -1319,16 +1318,16 @@ def print_automl_framework_results():
             # Filter failed data sets
             if mean[i] == 0:
                 print('--', end='\t')
-            else:
-                if mean[i] == maximum:
-                    print('\\B ', end='')
-                if significant[i]:
-                    if raw_significance[i].mean() == -1:
-                        print('{{\color{{blue}}{:.5f}}}'.format(mean[i]).zfill(4), end=' ')
-                    else:
-                        print('\\underline{{{:.5f}}}'.format(mean[i]).zfill(4), end=' ')
+            elif significant[i]:
+                if raw_significance[i].mean() == -1:
+                    print('{{\\color{{blue}}{:.5f}}}'.format(mean[i]).zfill(4), end=' ')
                 else:
                     print('{:.5f}'.format(mean[i]).zfill(4), end=' ')
+            elif mean[i] == maximum:
+                print('\\B {:.5f}'.format(mean[i]).zfill(4), end=' ')
+            else:
+                print('\\ul{{{:.5f}}}'.format(mean[i]).zfill(4), end=' ')
+
             if i == len(mean) - 1:
                 print('\t\\\\')
             else:
@@ -1346,13 +1345,14 @@ def print_automl_framework_results():
     maximum = np.max(tmp)
     max_idx = np.argmax(tmp)
     for i in range(len(tmp)):
-        if tmp[i] == maximum:
-            print('\\B ', end='')
         pvalue = wilcoxon(raw_significance[:, max_idx], raw_significance[:, i]).pvalue
         if pvalue < 0.05:
-            print('\\underline{{{:.5f}}}'.format(tmp[i]).zfill(4), end=' ')
-        else:
             print('{:.5f}'.format(tmp[i]).zfill(5), end=' ')
+        elif tmp[i] == maximum:
+            print('\\B {:.5f}'.format(tmp[i]).zfill(5), end=' ')
+        else:
+            print('\\ul{{{:.5f}}}'.format(tmp[i]).zfill(4), end=' ')
+
         if i == len(tmp) - 1:
             print('\t\\\\')
         else:
@@ -1391,13 +1391,13 @@ def print_best_incumbent(ls: List[BenchmarkResult], iteration: int = -1):
     minimum = np.min(x.mean(axis=1))
     min_idx = np.argmin(x.mean(axis=1))
     for i in range(len(algorithms)):
-        if x.mean(axis=1)[i] == minimum:
-            print('\\B ', end='')
         pvalue = wilcoxon(x[min_idx, :], x[i, :]).pvalue
         if pvalue < 0.05:
-            print('\\underline{{{:2.5f}}}'.format(x.mean(axis=1)[i]))
-        else:
             print('{:2.5f}'.format(x.mean(axis=1)[i]))
+        elif x.mean(axis=1)[i] == minimum:
+            print('\\B {:2.5f}'.format(x.mean(axis=1)[i]))
+        else:
+            print('\\ul{{{:2.5f}}}'.format(x.mean(axis=1)[i]))
     print()
 
 
