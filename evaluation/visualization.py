@@ -13,6 +13,7 @@ import matplotlib.transforms as mtrans
 from matplotlib import cm, patches
 from matplotlib.legend_handler import HandlerBase
 from mpl_toolkits.axes_grid1.inset_locator import mark_inset
+from scipy.stats import rankdata
 from sklearn.preprocessing import minmax_scale
 
 import util
@@ -26,7 +27,7 @@ def plot_cash_incumbent(x, x_std, labels: list):
     matplotlib.rcParams.update({'font.size': 12})
 
     fig, ax = plt.subplots()
-    fig.set_size_inches(20, 8)
+    fig.set_size_inches(20, 6)
     fig.set_dpi(100)
 
     axins = ax.inset_axes([0.66, 0.525, 0.325, 0.31])
@@ -51,12 +52,31 @@ def plot_cash_incumbent(x, x_std, labels: list):
 
     mark_inset(ax, axins, loc1=1, loc2=2, fc="none", ec="0.5")
 
-    # ax.set_yscale('log')
     ax.set_xscale('log')
     ax.set_xlabel('Iteration')
     ax.set_ylabel('Normalized Performance')
     ax.legend(loc='lower right')
     plt.savefig('evaluation/plots/cash-incumbent.pdf', bbox_inches='tight')
+
+    ranks = np.zeros((x.shape[0], x.shape[2]))
+    for d in range(x.shape[1]):
+        x_tmp = x[:, d, :]
+        rank = np.apply_along_axis(lambda r: rankdata(r, method='min'), axis=0, arr=1 - x_tmp)
+        ranks += rank
+
+    ranks /= x.shape[1]
+
+    fig, ax = plt.subplots()
+    fig.set_size_inches(20, 6)
+    fig.set_dpi(100)
+
+    for idx in range(len(labels)):
+        ax.plot(ranks.T[:, idx], label=labels[idx], linewidth=2.0)
+    ax.set_xscale('log')
+    ax.set_xlabel('Iteration')
+    ax.set_ylabel('Averaged Rank')
+    ax.legend(loc='upper right')
+    plt.savefig('evaluation/plots/cash-rank.pdf', bbox_inches='tight')
 
 
 def plot_pairwise_performance(x, labels: list, cash: bool = False):
@@ -93,6 +113,26 @@ def plot_pairwise_performance(x, labels: list, cash: bool = False):
                                                                       labels[i].replace(' ', ''),
                                                                       labels[j].replace(' ', '')),
                     bbox_inches='tight')
+
+
+def print_pairwise_performance(x, labels: list):
+    import pandas as pd
+    indices = range(len(labels))
+
+    df = pd.DataFrame(index=labels, columns=labels, data=np.zeros((len(labels), len(labels))))
+    for i in indices:
+        for j in indices:
+            # Ignore failed data sets
+            mask = np.logical_and(x[:, i] != 0, x[:, j] != 0)
+            x1 = x[mask, i]
+            x2 = x[mask, j]
+
+            diff = x1 - x2
+            df[labels[j]][labels[i]] = (diff > 0).sum() / diff.shape
+
+    pd.options.display.width = 0
+    print(df)
+    print(np.apply_along_axis(lambda r: rankdata(r, method='min'), axis=1, arr=1 - x).mean(axis=0))
 
 
 def plot_dataset_performance(values, minimum, maximum, labels: list, tasks: list, rows: int = 20, cash: bool = False):

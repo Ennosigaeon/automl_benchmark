@@ -16,7 +16,8 @@ from config.vectorizer import ConfigVectorizer
 from evaluation import scripts
 from evaluation.base import MongoPersistence
 from evaluation.visualization import plot_cash_incumbent, plot_overall_performance, plot_pairwise_performance, \
-    plot_successive_halving, plot_dataset_performance, plot_configuration_similarity, plot_pipeline_similarity
+    plot_successive_halving, plot_dataset_performance, plot_configuration_similarity, plot_pipeline_similarity, \
+    print_pairwise_performance
 from util.mean_shift import CustomMeanShift, gower_distances
 
 
@@ -658,6 +659,7 @@ def print_cash_results(persistence: MongoPersistence):
 
     plot_cash_incumbent(incumbents, incumbents_std, list(labels))
     plot_pairwise_performance(average[:, 3:], list(labels)[1:], cash=True)
+    print_pairwise_performance(average[:, 2:], list(labels))
     plot_overall_performance(normalized, list(labels), cash=True)
     plot_dataset_performance(results, minimum, maximum, list(labels), tasks, cash=True)
 
@@ -1371,6 +1373,7 @@ def print_automl_framework_results():
     plot_dataset_performance(results[2:], minimum, maximum, list(labels[2:]), tasks, cash=False)
     plot_overall_performance(normalized[2:], labels[2:], cash=False)
     plot_pairwise_performance(average[:, 2:], labels[2:], cash=False)
+    print_pairwise_performance(average[:, 2:], labels[2:])
 
 
 def print_best_incumbent(ls: List[BenchmarkResult], iteration: int = -1):
