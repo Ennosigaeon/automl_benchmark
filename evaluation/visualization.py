@@ -135,11 +135,11 @@ def print_pairwise_performance(x, labels: list):
     print(np.apply_along_axis(lambda r: rankdata(r, method='min'), axis=1, arr=1 - x).mean(axis=0))
 
 
-def plot_dataset_performance(values, minimum, maximum, labels: list, tasks: list, rows: int = 20, cash: bool = False):
+def plot_dataset_performance(values, minimum, maximum, labels: list, tasks: list, rows: int = 10, cash: bool = False):
     with open('assets/ds.pkl', 'rb') as f:
         datasets: Dict[int, Dataset] = pickle.load(f)
 
-    a4_size = (8.27, 11.69)
+    a4_size = (8.27, 0.8 * rows)
 
     normalized = []
     for i in range(len(tasks)):
@@ -155,11 +155,21 @@ def plot_dataset_performance(values, minimum, maximum, labels: list, tasks: list
                     # v = ((1 - sample) - minimum[idx2]) / (maximum[idx2] - minimum[idx2])
                     v = 1 - sample
                     normalized[idx2][idx].append(v)
+                else:
+                    normalized[idx2][idx].append(0)
 
     std = np.zeros(len(normalized))
     for idx in range(len(normalized)):
         start = 1 if cash else 0
-        std[idx] = np.array([item for sublist in normalized[idx][start:] for item in sublist]).std()
+
+        mean = []
+        for idx2, sublist in enumerate(normalized[idx][start:]):
+            tmp = np.array(sublist)
+            if np.mean(tmp) != 0:
+                # mean += sublist
+                mean.append(np.array(sublist).std())
+        # std[idx] = np.array(mean).std()
+        std[idx] = np.array(mean).mean()
 
     plot_idx = std.argsort()[-(rows * 2):]
 
@@ -170,14 +180,15 @@ def plot_dataset_performance(values, minimum, maximum, labels: list, tasks: list
         axes[i].grid(True, linewidth=0.5, alpha=0.75)
         axes[i].set_axisbelow(True)
         axes[i].set_yticks(np.arange(rows))
-        axes[i].set_xticks([0.2, 0.4, 0.6, 0.8, 1.0])
+        axes[i].set_xticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
         axes[i].tick_params(axis=u'both', which=u'both', length=0)
         axes[i].set_yticklabels([datasets[tasks[idx]].name[:15] for idx in plot_idx[i * rows: (i + 1) * rows]])
-        axes[i].set_ylim([-0.5, rows - 0.5])
+        # axes[i].set_yticklabels([idx for idx in plot_idx[i:rows * 2:2]])
+        axes[i].set_xlim([-0.05, 1.05])
         axes[i].tick_params(axis='both', which='major', labelsize=8)
     axes[1].yaxis.tick_right()
-    print([datasets[tasks[idx]].task_id for idx in plot_idx])
 
+    y_offsets = np.linspace(-0.3, 0.3, len(values))
     for idx in range(len(values)):
         mean = [[], []]
         mean_y = [[], []]
@@ -188,10 +199,12 @@ def plot_dataset_performance(values, minimum, maximum, labels: list, tasks: list
 
             mean[idx3].append(np.array(normalized[idx2][idx]).mean())
             x[idx3] += normalized[idx2][idx]
+            # x[idx3].append(normalized[idx2][idx])
 
-            y_val = i // 2 + (len(values) / rows) - 0.05 - 0.1 * idx
+            y_val = i // 2 + y_offsets[idx]
             mean_y[idx3].append(y_val)
             y[idx3] += [y_val] * len(normalized[idx2][idx])
+            # y[idx3].append(y_val)
 
         for i in range(2):
             # noinspection PyProtectedMember
@@ -201,10 +214,15 @@ def plot_dataset_performance(values, minimum, maximum, labels: list, tasks: list
                             linewidths=0, **color)
             axes[i].scatter(mean[i], mean_y[i], marker='d', s=(matplotlib.rcParams['lines.markersize'] ** 2) * 0.5,
                             label=label, **color)
+            # for j in range(len(y[i])):
+            #     axes[i].boxplot(x[i][j], positions=[y[i][j]], widths=[0.075], vert=False, manage_ticks=False,
+            #                     showfliers=False, patch_artist=True, medianprops={'color': 'black'},
+            #                     whiskerprops={**color}, boxprops={**color, 'facecolor': color['color']},
+            #                     capprops={**color})
 
     handles, labels_txt = axes[0].get_legend_handles_labels()
 
-    fig.subplots_adjust(bottom=0.04)
+    fig.subplots_adjust(bottom=0.6 / rows)
     fig.legend(handles, labels_txt, ncol=len(labels) // 2, loc='lower center', borderaxespad=0.1,
                fontsize=8)
 
