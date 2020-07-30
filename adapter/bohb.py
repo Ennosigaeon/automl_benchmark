@@ -64,7 +64,7 @@ class BohbAdapter(BaseAdapter):
 
 class HPOlib2Worker(Worker):
     def __init__(self, benchmark, configspace=None, budget_name='budget', budget_preprocessor=None,
-                 measure_test_loss=False, config_as_array=True, **kwargs):
+                 config_as_array=True, **kwargs):
 
         super().__init__(**kwargs)
         self.benchmark = benchmark
@@ -83,8 +83,6 @@ class HPOlib2Worker(Worker):
 
         self.config_as_array = config_as_array
 
-        self.measure_test_loss = measure_test_loss
-
     def compute(self, config, budget, **kwargs):
         c = {}
 
@@ -102,9 +100,6 @@ class HPOlib2Worker(Worker):
 
         kwargs = {self.budget_name: self.budget_preprocessor(budget)}
         res = self.benchmark.objective_function(c, **kwargs)
-        if self.measure_test_loss:
-            del kwargs[self.budget_name]
-            res['test_loss'] = self.benchmark.objective_function_test(c, **kwargs)['function_value']
         return ({
             'loss': res['function_value'],
             'info': res

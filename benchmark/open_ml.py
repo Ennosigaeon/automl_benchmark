@@ -7,12 +7,11 @@ import math
 import numpy as np
 import openml
 import pandas as pd
-from hpolib.util import rng_helper
 from sklearn.model_selection import train_test_split, KFold
 from sklearn.preprocessing import LabelEncoder
 
 import util.logger
-from benchmark import AbstractBenchmark, create_esimator
+from benchmark import AbstractBenchmark, create_estimator
 from config import BaseConverter, NoopConverter, MetaConfigCollection
 
 logger = util.logger.get()
@@ -41,7 +40,7 @@ class OpenMLDataManager():
         openml.config.apikey = '610344db6388d9ba34f6db45a3cf71de'
         openml.config.set_cache_directory(self.save_to)
 
-    def load(self) -> 'OpenMLDataManager':
+    def load(self, shuffle: bool = False) -> 'OpenMLDataManager':
         '''
         Loads dataset from OpenML in _config.data_directory.
         Downloads data if necessary.
@@ -80,6 +79,12 @@ class OpenMLDataManager():
         y = y.values.__array__()
         self.y = LabelEncoder().fit_transform(y)
         self.X = X.astype(np.float64)
+
+        if shuffle:
+            shuffle = self.rng.permutation(X.shape[0])
+            self.X = self.X[shuffle[:]]
+            self.y = self.y[shuffle[:]]
+
         self.categorical = categorical
         return self
 
@@ -113,6 +118,7 @@ class OpenMLBenchmark(AbstractBenchmark):
     def __init__(self, task_id: int, test_size: Optional[float] = 0.3, n_folds: Optional[int] = 4, load: bool = True):
         super().__init__()
         self.task_id = task_id
+        self.fold = None
 
         if load:
             if test_size is not None:
@@ -130,17 +136,15 @@ class OpenMLBenchmark(AbstractBenchmark):
         avg_score = 0
 
         # logger.debug('Testing configuration {}'.format(configuration))
-        for fold in self.folds:
+        for idx, fold in enumerate(self.folds):
             X_train, y_train, X_test, y_test = fold
-            self.rng = rng_helper.get_rng(rng=seed, self_rng=self.rng)
 
-            shuffle = self.rng.permutation(X_train.shape[0])
             size = int(budget * X_train.shape[0])
+            X_train = X_train[:size]
+            y_train = y_train[:size]
 
-            X_train = X_train[shuffle[:size]]
-            y_train = y_train[shuffle[:size]]
-
-            p = multiprocessing.Process(target=self._fit_and_score, args=(configuration, X_train, y_train, score))
+            p = multiprocessing.Process(target=self._fit_and_score,
+                                        args=(configuration, X_train, y_train, X_test, y_test, score))
             p.start()
             p.join(30)
 
@@ -153,30 +157,16 @@ class OpenMLBenchmark(AbstractBenchmark):
         c = time.time() - start_time
         return {'function_value': avg_score / len(self.folds), 'cost': c, 'start': start_time, 'end': start_time + c}
 
-    def _fit_and_score(self, configuration, X_train, y_train, score):
+    def _fit_and_score(self, configuration, X_train, y_train, X_test, y_test, score):
         try:
             clf = create_esimator(configuration)
             clf = clf.fit(X_train, y_train)
-            score.value = 1 - clf.score(self.X_test, self.y_test)
+            score.value = 1 - clf.score(X_test, y_test)
         except Exception as ex:
             logger.error('Uncaught exception {} for {}'.format(ex, configuration))
 
     def objective_function_test(self, configuration, **kwargs):
-        start_time = time.time()
-
-        rng = kwargs.get('rng', None)
-        self.rng = rng_helper.get_rng(rng=rng, self_rng=self.rng)
-
-        try:
-            clf = create_esimator(configuration)
-            clf.fit(self.X_train, self.y_train)
-            y = 1 - clf.score(self.X_test, self.y_test)
-        except Exception as ex:
-            logger.error('Uncaught expection {} for {}'.format(ex, configuration))
-            y = 1
-
-        c = time.time() - start_time
-        return {'function_value': y, 'cost': c}
+        pass
 
     @staticmethod
     def get_configuration_space(converter: BaseConverter = NoopConverter()):

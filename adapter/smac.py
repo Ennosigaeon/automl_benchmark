@@ -52,7 +52,7 @@ def query_objective_function(benchmark: AbstractBenchmark, idx: int, seed: int,
             if key == '__choice__':
                 continue
             d[key[n:]] = value
-        return benchmark(d, **kwargs)
+        return benchmark.objective_function(d, **kwargs)['function_value']
 
     smac = SMAC(scenario=Scenario(scenario), tae_runner=objective_function, rng=random_state)
     x_star = smac.optimize()

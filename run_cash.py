@@ -187,15 +187,17 @@ if __name__ == '__main__':
 
     logger.info('Main start')
     try:
-        persistence = MongoPersistence(url='localhost', db='foo')
+        persistence = MongoPersistence(url='localhost', db='tmp')
 
         task_ids = [9910, 14952, 146817, 146819, 146820, 146824, 167121, 167124, 167125, 167140, 167141]
         for task in task_ids:
             logger.info('#######\nStarting task {}\n#######'.format(task))
             for i in range(10):
                 logger.info('##\nIteration {} at {}\n##'.format(i, datetime.datetime.now().time()))
-                bm = benchmark.OpenMLBenchmark(task)
-                run(persistence, bm, i)
+                bm = benchmark.OpenMLBenchmark(task, test_size=None)
+                for fold in range(len(bm.folds)):
+                    bm.fold = fold
+                    run(persistence, bm, i)
     except (SystemExit, KeyboardInterrupt, Exception) as e:
         logger.error(e, exc_info=True)
 

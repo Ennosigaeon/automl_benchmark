@@ -21,8 +21,8 @@ def main(fold, dummy: bool) -> float:
     X_train = SimpleImputer().fit_transform(X_train)
     X_test = SimpleImputer().fit_transform(X_test)
 
-        estimator = DummyClassifier() if dummy else RandomForestClassifier()
-        estimator.fit(X_train, y_train)
+    estimator = DummyClassifier() if dummy else RandomForestClassifier()
+    estimator.fit(X_train, y_train)
 
     predictions = estimator.predict(X_test)
     return 1 - sklearn.metrics.accuracy_score(y_test, predictions)
