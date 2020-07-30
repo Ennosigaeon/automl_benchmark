@@ -25,10 +25,9 @@ def setup():
     os.mkdir('/tmp/atm/')
 
 
-def main(bm: OpenMLBenchmark, timeout: int, jobs: int) -> float:
-    for fold in bm.folds:
-        setup()
-        X_train, y_train, X_test, y_test = fold
+def main(fold, bm: OpenMLBenchmark, timeout: int, jobs: int) -> float:
+    setup()
+    X_train, y_train, X_test, y_test = fold
 
         headers = bm.column_names + ['class']
         train = np.c_[X_train, y_train]

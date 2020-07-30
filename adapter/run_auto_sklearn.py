@@ -42,7 +42,7 @@ def setup():
         pass
 
 
-def main(bm: OpenMLBenchmark, timeout: int, run_timeout: int, jobs: int, random: bool) -> float:
+def main(fold, bm: OpenMLBenchmark, timeout: int, run_timeout: int, jobs: int, random: bool) -> float:
     def get_spawn_classifier(X_train, y_train, tmp_folder, output_folder, seed0):
         def spawn_classifier(seed, dataset_name):
             # Use the initial configurations from meta-learning only in one out of
@@ -85,10 +85,8 @@ def main(bm: OpenMLBenchmark, timeout: int, run_timeout: int, jobs: int, random:
 
     name = bm.get_meta_information()['name']
 
-    avg_score = 0
-    for fold in bm.folds:
-        setup()
-        X_train, y_train, X_test, y_test = fold
+    setup()
+    X_train, y_train, X_test, y_test = fold
 
         tmp_folder = '/tmp/autosklearn/{}/tmp'.format(name)
         output_folder = '/tmp/autosklearn/{}/out'.format(name)

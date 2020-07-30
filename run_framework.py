@@ -22,58 +22,59 @@ def run(task: int, conn) -> None:
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
-
-            if algorithm == 'atm':
-                from adapter import run_atm
-                if run_atm.skip(task):
-                    s = -1
+            avg_score = 0
+            for fold in bm.folds:
+                if algorithm == 'atm':
+                    from adapter import run_atm
+                    if run_atm.skip(task):
+                        avg_score += -1
+                    else:
+                        avg_score += run_atm.main(fold, bm, timeout, jobs)
+                elif algorithm == 'random':
+                    from adapter import run_auto_sklearn
+                    if run_auto_sklearn.skip(task):
+                        avg_score += -1
+                    else:
+                        avg_score += run_auto_sklearn.main(fold, bm, timeout, run_timeout, jobs, random=True)
+                elif algorithm == 'auto-sklearn':
+                    from adapter import run_auto_sklearn
+                    if run_auto_sklearn.skip(task):
+                        avg_score += -1
+                    else:
+                        avg_score += run_auto_sklearn.main(fold, bm, timeout, run_timeout, jobs, random=False)
+                elif algorithm == 'dummy':
+                    from adapter import run_baseline
+                    if run_baseline.skip(task):
+                        avg_score += -1
+                    else:
+                        avg_score += run_baseline.main(fold, dummy=True)
+                elif algorithm == 'rf':
+                    from adapter import run_baseline
+                    if run_baseline.skip(task):
+                        avg_score += -1
+                    else:
+                        avg_score += run_baseline.main(fold, dummy=False)
+                elif algorithm == 'h2o':
+                    from adapter import run_h2o
+                    if run_h2o.skip(task):
+                        avg_score += -1
+                    else:
+                        avg_score += run_h2o.main(fold, bm, timeout, run_timeout, jobs)
+                elif algorithm == 'hpsklearn':
+                    from adapter import run_hpsklearn
+                    if run_hpsklearn.skip(task):
+                        avg_score += -1
+                    else:
+                        avg_score += run_hpsklearn.main(fold, timeout, run_timeout)
+                elif algorithm == 'tpot':
+                    from adapter import run_tpot
+                    if run_tpot.skip(task):
+                        avg_score += -1
+                    else:
+                        avg_score += run_tpot.main(fold, timeout, run_timeout, jobs)
                 else:
-                    s = run_atm.main(bm, timeout, jobs)
-            elif algorithm == 'random':
-                from adapter import run_auto_sklearn
-                if run_auto_sklearn.skip(task):
-                    s = -1
-                else:
-                    s = run_auto_sklearn.main(bm, timeout, run_timeout, jobs, random=True)
-            elif algorithm == 'auto-sklearn':
-                from adapter import run_auto_sklearn
-                if run_auto_sklearn.skip(task):
-                    s = -1
-                else:
-                    s = run_auto_sklearn.main(bm, timeout, run_timeout, jobs, random=False)
-            elif algorithm == 'dummy':
-                from adapter import run_baseline
-                if run_baseline.skip(task):
-                    s = -1
-                else:
-                    s = run_baseline.main(bm, dummy=True)
-            elif algorithm == 'rf':
-                from adapter import run_baseline
-                if run_baseline.skip(task):
-                    s = -1
-                else:
-                    s = run_baseline.main(bm, dummy=False)
-            elif algorithm == 'h2o':
-                from adapter import run_h2o
-                if run_h2o.skip(task):
-                    s = -1
-                else:
-                    s = run_h2o.main(bm, timeout, run_timeout, jobs)
-            elif algorithm == 'hpsklearn':
-                from adapter import run_hpsklearn
-                if run_hpsklearn.skip(task):
-                    s = -1
-                else:
-                    s = run_hpsklearn.main(bm, timeout, run_timeout)
-            elif algorithm == 'tpot':
-                from adapter import run_tpot
-                if run_tpot.skip(task):
-                    s = -1
-                else:
-                    s = run_tpot.main(bm, timeout, run_timeout, jobs)
-            else:
-                raise ValueError('Unknown algorithm {}'.format(algorithm))
-            conn.send(s)
+                    raise ValueError('Unknown algorithm {}'.format(algorithm))
+        conn.send(avg_score / len(bm.folds))
     except Exception:
         traceback.print_exc()
         conn.send(1)

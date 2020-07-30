@@ -5,8 +5,6 @@ from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.impute import SimpleImputer
 
-from benchmark import OpenMLBenchmark
-
 
 def skip(id: int) -> bool:
     failed = []
@@ -17,17 +15,14 @@ def setup():
     pass
 
 
-def main(bm: OpenMLBenchmark, dummy: bool) -> float:
-    avg_score = 0
-    for fold in bm.folds:
-        setup()
-        X_train, y_train, X_test, y_test = fold
-        X_train = SimpleImputer().fit_transform(X_train)
-        X_test = SimpleImputer().fit_transform(X_test)
+def main(fold, dummy: bool) -> float:
+    setup()
+    X_train, y_train, X_test, y_test = fold
+    X_train = SimpleImputer().fit_transform(X_train)
+    X_test = SimpleImputer().fit_transform(X_test)
 
         estimator = DummyClassifier() if dummy else RandomForestClassifier()
         estimator.fit(X_train, y_train)
 
-        predictions = estimator.predict(X_test)
-        avg_score += 1 - sklearn.metrics.accuracy_score(y_test, predictions)
-    return avg_score / len(bm.folds)
+    predictions = estimator.predict(X_test)
+    return 1 - sklearn.metrics.accuracy_score(y_test, predictions)

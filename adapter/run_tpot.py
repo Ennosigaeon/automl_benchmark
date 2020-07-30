@@ -3,8 +3,6 @@ from typing import List
 from sklearn.pipeline import Pipeline
 from tpot import TPOTClassifier
 
-from benchmark import OpenMLBenchmark
-
 
 def skip(id: int) -> bool:
     failed = []
@@ -15,23 +13,20 @@ def setup():
     pass
 
 
-def main(bm: OpenMLBenchmark, timeout: int, run_timeout: int, jobs: int) -> float:
-    avg_score = 0
-    for fold in bm.folds:
-        setup()
-        X_train, y_train, X_test, y_test = fold
+def main(fold, timeout: int, run_timeout: int, jobs: int) -> float:
+    setup()
+    X_train, y_train, X_test, y_test = fold
 
-        pipeline_optimizer = TPOTClassifier(
-            max_time_mins=timeout / 60,
-            max_eval_time_mins=run_timeout / 60,
-            scoring='accuracy',
-            n_jobs=jobs,
-            verbosity=1
-        )
-        pipeline_optimizer.fit(X_train, y_train)
-        print(pipeline_optimizer.fitted_pipeline_)
-        avg_score += 1 - pipeline_optimizer.score(X_test, y_test)
-    return avg_score / len(bm.folds)
+    pipeline_optimizer = TPOTClassifier(
+        max_time_mins=timeout / 60,
+        max_eval_time_mins=run_timeout / 60,
+        scoring='accuracy',
+        n_jobs=jobs,
+        verbosity=1
+    )
+    pipeline_optimizer.fit(X_train, y_train)
+    print(pipeline_optimizer.fitted_pipeline_)
+    return 1 - pipeline_optimizer.score(X_test, y_test)
 
 
 # noinspection PyUnresolvedReferences
