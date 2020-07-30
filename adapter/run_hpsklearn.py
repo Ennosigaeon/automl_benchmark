@@ -49,7 +49,7 @@ def main(fold, timeout: int, run_timeout: int):
 
 
 # noinspection PyUnresolvedReferences
-def load_pipeline(input: str) -> List[List[str]]:
+def load_model(input: str):
     from sklearn.ensemble import RandomForestClassifier
     from sklearn.preprocessing import MinMaxScaler
     from sklearn.svm import SVC
@@ -71,8 +71,12 @@ def load_pipeline(input: str) -> List[List[str]]:
     if dict['preprocs'] != ():
         steps.append(('preprocs', dict['preprocs'][0]))
     steps.append(('learner', dict['learner']))
-
     pipeline = Pipeline(steps=steps)
+    return pipeline
+
+
+def load_pipeline(input: str) -> List[List[str]]:
+    pipeline = load_model(input)
 
     res = []
     for s in pipeline.steps:

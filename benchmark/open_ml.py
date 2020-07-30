@@ -159,7 +159,7 @@ class OpenMLBenchmark(AbstractBenchmark):
 
     def _fit_and_score(self, configuration, X_train, y_train, X_test, y_test, score):
         try:
-            clf = create_esimator(configuration)
+            clf = create_estimator(configuration)
             clf = clf.fit(X_train, y_train)
             score.value = 1 - clf.score(X_test, y_test)
         except Exception as ex:

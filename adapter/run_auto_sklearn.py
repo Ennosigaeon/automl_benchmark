@@ -153,7 +153,7 @@ def load_pipeline(input: str) -> List[List[str]]:
 
     res = []
     try:
-        pipelines: List[Union[SimpleClassificationPipeline, MyDummyClassifier]] = eval(input)
+        pipelines: List[Union[SimpleClassificationPipeline, MyDummyClassifier]] = load_model(input)
         for pipeline in pipelines:
             res.append([])
             if isinstance(pipeline[1], MyDummyClassifier):
@@ -193,3 +193,19 @@ def load_pipeline(input: str) -> List[List[str]]:
         print(input)
         raise
     return res
+
+
+# noinspection PyUnresolvedReferences
+def load_model(input: str) -> List[List[str]]:
+    from autosklearn.evaluation.abstract_evaluator import MyDummyClassifier
+    from autosklearn.pipeline.classification import SimpleClassificationPipeline
+    from autosklearn.pipeline.components.classification import ClassifierChoice
+    from autosklearn.pipeline.components.data_preprocessing.rescaling import RescalingChoice
+    from autosklearn.pipeline.components.feature_preprocessing import FeaturePreprocessorChoice
+    from autosklearn.pipeline.components.feature_preprocessing.no_preprocessing import NoPreprocessing
+    from autosklearn.pipeline.components.data_preprocessing.rescaling.none import NoRescalingComponent
+    from autosklearn.pipeline.components.data_preprocessing.one_hot_encoding import OHEChoice
+    from autosklearn.pipeline.components.data_preprocessing.one_hot_encoding.no_encoding import NoEncoding
+
+    pipelines: List[Union[SimpleClassificationPipeline, MyDummyClassifier]] = eval(input)
+    return pipelines

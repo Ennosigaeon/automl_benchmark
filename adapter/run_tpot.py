@@ -30,7 +30,7 @@ def main(fold, timeout: int, run_timeout: int, jobs: int) -> float:
 
 
 # noinspection PyUnresolvedReferences
-def load_pipeline(input: str) -> List[List[str]]:
+def load_model(input: str):
     from sklearn.ensemble import ExtraTreesClassifier, GradientBoostingClassifier
     from sklearn.linear_model import LogisticRegression
     from sklearn.naive_bayes import GaussianNB, MultinomialNB
@@ -40,7 +40,7 @@ def load_pipeline(input: str) -> List[List[str]]:
     from sklearn.tree import DecisionTreeClassifier
     from sklearn.decomposition import PCA, FastICA
     from sklearn.ensemble import RandomForestClassifier
-    from sklearn.feature_selection import VarianceThreshold, SelectPercentile, SelectFwe
+    from sklearn.feature_selection import VarianceThreshold, SelectPercentile, SelectFwe, f_classif
     from sklearn.kernel_approximation import RBFSampler
     from sklearn.naive_bayes import BernoulliNB
     from sklearn.neighbors import KNeighborsClassifier
@@ -48,8 +48,17 @@ def load_pipeline(input: str) -> List[List[str]]:
     from tpot.builtins import OneHotEncoder, StackingEstimator
     from tpot.builtins import ZeroCount
     from xgboost import XGBClassifier
+    from copy import copy
 
     pipeline: Pipeline = eval(input)
+    return pipeline
+
+
+# noinspection PyUnresolvedReferences
+def load_pipeline(input: str) -> List[List[str]]:
+    from sklearn.pipeline import FeatureUnion
+    from tpot.builtins import OneHotEncoder, StackingEstimator
+    pipeline: Pipeline = load_model(input)
 
     res = []
 

@@ -13,7 +13,7 @@ from config import BaseConverter, NoopConverter, MetaConfigCollection
 logger = util.logger.get()
 
 
-def create_esimator(conf: dict):
+def create_estimator(conf: dict):
     try:
         name = conf['algorithm']
         kwargs = conf.copy()
@@ -21,6 +21,10 @@ def create_esimator(conf: dict):
 
         module_name = name.rpartition(".")[0]
         class_name = name.split(".")[-1]
+
+        for key, value in kwargs.items():
+            if isinstance(value, float) and int(value) == value:
+                kwargs[key] = int(value)
 
         module = importlib.import_module(module_name)
         class_ = getattr(module, class_name)
@@ -56,7 +60,7 @@ class Iris(AbstractBenchmark):
         y_train = self.y_train[shuffle[:size]]
 
         try:
-            clf = create_esimator(configuration)
+            clf = create_estimator(configuration)
             clf.fit(X_train, y_train)
             y = 1 - clf.score(self.X_valid, self.y_valid)
         except Exception as ex:
@@ -76,7 +80,7 @@ class Iris(AbstractBenchmark):
         y_train = np.concatenate((self.y_train, self.y_valid))
 
         try:
-            clf = create_esimator(configuration)
+            clf = create_estimator(configuration)
             clf.fit(X_train, y_train)
             y = 1 - clf.score(self.X_test, self.y_test)
         except Exception as ex:

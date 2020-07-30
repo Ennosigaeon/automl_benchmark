@@ -1,8 +1,16 @@
 import os
 import pickle
+import traceback
+from typing import Dict, List, Tuple
 
 import numpy as np
 import openml
+import sklearn
+from sklearn.ensemble import VotingClassifier
+
+from adapter.run_h2o import _createFrame
+from benchmark import OpenMLBenchmark, create_estimator
+from evaluation.visualization import plot_cash_overfitting, plot_framework_overfitting
 
 all_tasks = [3, 6, 11, 12, 14, 15, 16, 18, 20, 21, 22, 23, 24, 28, 29, 31, 32, 36, 37, 41, 43, 45, 49, 53, 58, 219,
              2074, 2079, 3021, 3022, 3481, 3485, 3492, 3493, 3494, 3510, 3512, 3543, 3549, 3560, 3561, 3567, 3573, 3889,
@@ -244,8 +252,161 @@ def load_file_results(base_dir: str, algorithm: str):
     print(pipelines)
 
 
+def calculate_cash_overfitting():
+    with open('assets/cash_configs.pkl', 'rb') as f:
+        cash_configs: Dict[int, Dict[str, List[Tuple[str, List[Dict]]]]] = pickle.load(f)
+
+    if os.path.exists('assets/overfitting_cash.pkl'):
+        with open('assets/overfitting_cash.pkl', 'rb') as f:
+            results: Dict[str, List[float]] = pickle.load(f)
+    else:
+        results = {}
+
+    for task, models in cash_configs.items():
+        print('Processing {}'.format(task))
+        data = OpenMLBenchmark(task)
+
+        for model, solvers in models.items():
+            for solver, params in solvers:
+                if solver not in results:
+                    results[solver] = []
+
+                for configuration, score in params:
+                    for fold in data.folds:
+                        try:
+                            X_train, y_train, X_test, y_test = fold
+
+                            clf = create_estimator(configuration)
+                            clf = clf.fit(X_train, y_train)
+
+                            learn_score = clf.score(X_train, y_train)
+                            test_score = clf.score(X_test, y_test)
+                            results[solver].append(learn_score - test_score)
+                        except Exception as ex:
+                            traceback.print_exc()
+                            print(ex)
+
+        with open('assets/overfitting_cash.pkl', 'wb') as f:
+            pickle.dump(results, f)
+    print(results)
+
+
+def calculate_framework_overfitting(base_dir: str):
+    import h2o
+    # Preprocessing for ATM
+    # =([a-z]\w*)                       =>      ='$1'
+    #  _\w+=\w+,?                       =>      EMPTY STRING
+    #
+    # Preprocessing for TPOT
+    # <function copy at 0x\w+>          =>      copy
+    # <function f_classif at 0x\w+>     =>      f_classif
+    # <class ('\w+')>                   =>      $1
+
+    from adapter import run_atm, run_auto_sklearn, run_h2o, run_hpsklearn, run_tpot
+
+    np.set_printoptions(linewidth=1000)
+
+    if os.path.exists('assets/overfitting_frameworks.pkl'):
+        with open('assets/overfitting_frameworks.pkl', 'rb') as f:
+            results: Dict[str, List[float]] = pickle.load(f)
+    else:
+        results = {}
+
+    for task in framework_tasks:
+        # 7594, 146195
+        if task < 168339:
+            continue
+
+        print('Processing {}'.format(task))
+
+        h2o.init(nthreads=4, max_mem_size=4 * 4, port=str(60000), ice_root='/tmp')
+        h2o.no_progress()
+
+        # for algorithm in ['random', 'auto-sklearn', 'tpot', 'atm', 'hpsklearn', 'h2o']:
+        for algorithm in ['h2o']:
+            if algorithm not in results:
+                results[algorithm] = []
+            print(algorithm)
+
+            name = os.path.join(base_dir, algorithm, '{}.txt'.format(task))
+            if not os.path.exists(name):
+                print('{} not found'.format(name))
+                continue
+
+            data = OpenMLBenchmark(task)
+
+            with open(name, 'r') as f:
+                # First line contains performances
+                f.readline()
+
+                line = f.readline()
+                while line:
+                    for fold in data.folds:
+                        X_train, y_train, X_test, y_test = fold
+                        print(line)
+
+                        try:
+                            if algorithm == 'atm':
+                                pipeline = [(1.0, run_atm.load_model(line))]
+                            elif algorithm == 'random' or algorithm == 'auto-sklearn':
+                                pipeline = run_auto_sklearn.load_model(line)
+                            elif algorithm == 'hpsklearn':
+                                pipeline = [(1.0, run_hpsklearn.load_model(line))]
+                            elif algorithm == 'tpot':
+                                pipeline = [(1.0, run_tpot.load_model(line))]
+                            elif algorithm == 'h2o':
+                                pipeline = run_h2o.load_model(line)
+                                train = _createFrame(X_train, y_train)
+                                learning = _createFrame(X_train)
+                                test = _createFrame(X_test)
+
+                                for i in range(len(data.categorical)):
+                                    if data.categorical[i]:
+                                        train[i] = train[i].asfactor()
+                                        learning[i] = learning[i].asfactor()
+                                        test[i] = test[i].asfactor()
+                                train['class'] = train['class'].asfactor()
+
+                                pipeline.train(y='class', training_frame=train)
+                                learning_pred = pipeline.predict(learning)
+                                test_pred = pipeline.predict(test)
+
+                                learn_score = sklearn.metrics.accuracy_score(y_train,
+                                                                             learning_pred['predict'].as_data_frame())
+                                test_score = sklearn.metrics.accuracy_score(y_test,
+                                                                            test_pred['predict'].as_data_frame())
+                                diff = learn_score - test_score
+                                results[algorithm].append(diff)
+                                continue
+                            else:
+                                raise ValueError('Unknown algorithm {}'.format(algorithm))
+
+                            estimators = []
+                            weights = []
+                            for i, p in enumerate(pipeline):
+                                estimators.append((str(i), p[1]))
+                                weights.append(p[0])
+                            clf = VotingClassifier(estimators=estimators, weights=weights)
+                            clf.fit(X_train, y_train)
+
+                            learn_score = clf.score(X_train, y_train)
+                            test_score = clf.score(X_test, y_test)
+                            results[algorithm].append(learn_score - test_score)
+                        except Exception:
+                            print(name)
+                            traceback.print_exc()
+                    line = f.readline()
+        with open('assets/overfitting_frameworks.pkl', 'wb') as f:
+            pickle.dump(results, f)
+        h2o.shutdown()
+
+
 if __name__ == '__main__':
     # merge_cash_results()
     # print_data_set_stats()
     # load_atm_results()
     load_file_results('/mnt/c/local/results/AutoML Benchmark', 'h2o')
+    calculate_framework_overfitting('/mnt/c/local/results/AutoML Benchmark')
+    calculate_cash_overfitting()
+    plot_cash_overfitting()
+    plot_framework_overfitting()

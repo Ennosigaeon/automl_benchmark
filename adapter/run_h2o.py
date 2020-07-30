@@ -36,30 +36,69 @@ def main(fold, bm: OpenMLBenchmark, timeout: int, run_timeout: int, jobs: int) -
         train = _createFrame(X_train, y_train)
         test = _createFrame(X_test)
 
-            for i in range(len(bm.categorical)):
-                if bm.categorical[i]:
-                    train[i] = train[i].asfactor()
-                    test[i] = test[i].asfactor()
-            train['class'] = train['class'].asfactor()
+        for i in range(len(bm.categorical)):
+            if bm.categorical[i]:
+                train[i] = train[i].asfactor()
+                test[i] = test[i].asfactor()
+        train['class'] = train['class'].asfactor()
 
-            aml = H2OAutoML(max_runtime_secs=timeout,
-                            max_runtime_secs_per_model=run_timeout)
-            aml.train(y='class', training_frame=train)
+        aml = H2OAutoML(max_runtime_secs=timeout,
+                        max_runtime_secs_per_model=run_timeout)
+        aml.train(y='class', training_frame=train)
 
-            predictions = aml.leader.predict(test)
-            params = aml.leader.get_params()
-            del params['model_id']
-            del params['training_frame']
-            del params['validation_frame']
+        predictions = aml.leader.predict(test)
+        params = aml.leader.get_params()
+        del params['model_id']
+        del params['training_frame']
+        del params['validation_frame']
 
-            for key in params.keys():
-                params[key] = params[key]['actual_value']
+        for key in params.keys():
+            params[key] = params[key]['actual_value']
 
         print(aml.leader.algo, '(', params, ')')
         return 1 - sklearn.metrics.accuracy_score(y_test, predictions['predict'].as_data_frame())
     finally:
         h2o.cluster().shutdown()
         shutil.rmtree(log_dir)
+
+
+def _createFrame(x, y=None):
+    if y is not None:
+        data = np.append(x, np.atleast_2d(y).T, axis=1)
+        columns = ['f' + str(i) for i in range(data.shape[1] - 1)] + ['class']
+    else:
+        data = x
+        columns = ['f' + str(i) for i in range(data.shape[1])]
+
+    df = pd.DataFrame(data=data[0:, 0:],
+                      index=[i for i in range(data.shape[0])],
+                      columns=columns)
+    return h2o.H2OFrame(df)
+
+
+def load_model(input: str):
+    def _map_algo(algo: str, args):
+        if algo == 'xgboost':
+            return H2OXGBoostEstimator(**args)
+        elif algo == 'gbm':
+            return H2OGradientBoostingEstimator(**args)
+        elif algo == 'glm':
+            return H2OGeneralizedLinearEstimator(**args)
+        elif algo == 'deeplearning':
+            return H2ODeepLearningEstimator(**args)
+        elif algo == 'drf' or algo == 'xrt':
+            return H2ORandomForestEstimator(**args)
+        else:
+            raise ValueError(algo)
+
+    algo = input.split(' ')[0]
+    if algo == 'stackedensemble':
+        # TODO ignore for now
+        return None
+
+    args = eval(input[len(algo) + 2:-2])
+    del args['response_column']
+    return _map_algo(algo, args)
 
 
 def load_pipeline(input: str) -> List[List[str]]:

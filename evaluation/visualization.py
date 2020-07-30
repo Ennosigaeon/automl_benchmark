@@ -17,7 +17,6 @@ from scipy.stats import rankdata
 from sklearn.preprocessing import minmax_scale
 
 import util
-from evaluation.scripts import Dataset
 
 FACE_COLOR = '#1f77b4'
 AXIS_COLOR = '#b0b0b0'
@@ -136,6 +135,7 @@ def print_pairwise_performance(x, labels: list):
 
 
 def plot_dataset_performance(values, minimum, maximum, labels: list, tasks: list, rows: int = 10, cash: bool = False):
+    from evaluation.scripts import Dataset
     with open('assets/ds.pkl', 'rb') as f:
         datasets: Dict[int, Dataset] = pickle.load(f)
 
@@ -534,3 +534,58 @@ def plot_successive_halving():
     ax.set_xticks([0.125, 0.25, 0.5, 1.0], ['12.5%', '25%', '50%', '100%'])
 
     plt.savefig('evaluation/plots/successive_halving.pdf', bbox_inches='tight')
+
+
+def plot_cash_overfitting():
+    labels = ['Grid Search', 'Random Search', 'SMAC', 'BOHB', 'Optunity', 'hyperopt', 'RoBO', 'BTB']
+    with open('assets/overfitting_cash.pkl', 'rb') as f:
+        overfitting = pickle.load(f)
+
+    data = []
+    for hpo in labels:
+        data.append(np.array(overfitting[hpo]))
+
+    fig, ax = plt.subplots()
+    fig.set_size_inches(20, 5)
+    fig.set_dpi(75)
+
+    ax.boxplot(data,
+               notch=True,
+               vert=True,
+               patch_artist=True,
+               labels=labels,
+               flierprops={'marker': 'x', 'alpha': 0.75, 'markerfacecolor': FACE_COLOR,
+                           'markeredgecolor': FACE_COLOR, 'markersize': 5})
+
+    ax.yaxis.grid(True)
+    ax.set_ylabel('Accuracy Difference')
+    ax.set_title('Learning-Test Overfit of CASH Solvers')
+
+    plt.savefig('evaluation/plots/overfitting-cash.pdf', bbox_inches='tight')
+
+
+def plot_framework_overfitting():
+    labels = ['Random Search', 'auto-sklearn', 'TPOT', 'ATM', 'hyperopt-sklearn']
+    with open('assets/overfitting_frameworks.pkl', 'rb') as f:
+        overfitting = pickle.load(f)
+
+    data = [np.array(overfitting['random']), np.array(overfitting['auto-sklearn']), np.array(overfitting['tpot']),
+            np.array(overfitting['atm']), np.array(overfitting['hpsklearn'])]
+
+    fig, ax = plt.subplots()
+    fig.set_size_inches(20, 5)
+    fig.set_dpi(75)
+
+    ax.boxplot(data,
+               notch=True,
+               vert=True,
+               patch_artist=True,
+               labels=labels,
+               flierprops={'marker': 'x', 'alpha': 0.75, 'markerfacecolor': FACE_COLOR,
+                           'markeredgecolor': FACE_COLOR, 'markersize': 5})
+
+    ax.yaxis.grid(True)
+    ax.set_ylabel('Accuracy Difference')
+    ax.set_title('Learning-Test Overfit of AutoML Frameworks')
+
+    plt.savefig('evaluation/plots/overfitting-frameworks.pdf', bbox_inches='tight')
