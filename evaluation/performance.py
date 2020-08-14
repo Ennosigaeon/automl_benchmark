@@ -482,6 +482,10 @@ def print_cash_results(persistence: MongoPersistence):
         [0.49347093903531813, 0.4943114049995365, 0.4948861354015388, 0.4957018817785743, 0.4926551926582826, 0.4944844421098168, 0.492222599882582, 0.49368105552637276, 0.4938664524302444, 0.4947810771560115],   # 189354
         [0.997276884756161, 0.9972608664311973, 0.9971086923440415, 0.9969805457443315, 0.997212811456306, 0.9969164724444765, 0.9970045732317772, 0.9972208206187879, 0.9971727656438966, 0.9971567473189329],   # 189355
     ]
+    cash_better = [3, 12, 23, 31, 54, 1067, 1461, 1468, 1475, 4134, 4534, 23517, 40701, 40927, 40975, 40978, 40979,
+                   40981, 40982, 40983, 40994, 41143, 41161, 41167]
+    framework_better = [469, 1169, 1464, 1486, 1489, 1492, 1596, 4135, 4538, 40668, 40670, 40685, 40923, 40984, 40996,
+                        41027, 41142, 41146, 41150, 41159, 41163, 41164, 41165, 41166, 41168, 41169]
     # @formatter:on
 
     minimum = 1 - np.array(dummy_baseline).mean(axis=1)
@@ -611,7 +615,8 @@ def print_cash_results(persistence: MongoPersistence):
         average_std.append(std)
 
         highest = np.max(mean)
-        print(datasets[idx], '\t&\t', end='')
+        marker = '^+' if datasets[idx] in cash_better else '^-' if datasets[idx] in framework_better else ''
+        print('\({}{}\)'.format(datasets[idx], marker), '\t&\t', end='')
         for i in range(len(mean)):
             if significant[i]:
                 print('{:.4f}'.format(mean[i]).zfill(4), end=' ')
@@ -1277,6 +1282,11 @@ def print_automl_framework_results():
         [1         , 1         , 1         , 1         , 1         , 1         , 1         , 1         , 1         , 1         ],  # 189355
         [0.35224814, 0.35139372, 0.35280469, 0.35036685, 0.35149563, 0.34908914, 0.35462327, 0.35066472, 0.35198163, 0.35548553],  # 189356
     ]
+
+    cash_better = [3, 12, 23, 31, 54, 1067, 1461, 1468, 1475, 4134, 4534, 23517, 40701, 40927, 40975, 40978, 40979,
+                   40981, 40982, 40983, 40994, 41143, 41161, 41167]
+    framework_better = [469, 1169, 1464, 1486, 1489, 1492, 1596, 4135, 4538, 40668, 40670, 40685, 40923, 40984, 40996,
+                        41027, 41142, 41146, 41150, 41159, 41163, 41164, 41165, 41166, 41168, 41169]
     # @formatter:on
 
     assert len(datasets) == len(auto_sklearn) == len(tpot) == len(atm) == len(hpsklearn) == len(random) == len(h2o) == \
@@ -1315,7 +1325,9 @@ def print_automl_framework_results():
         average.append(mean)
 
         maximum = np.max(mean)
-        print(datasets[idx], '\t&\t', end='')
+
+        marker = '^+' if datasets[idx] in framework_better else '^-' if datasets[idx] in cash_better else ''
+        print('\({}{}\)'.format(datasets[idx], marker), '\t&\t', end='')
         for i in range(len(mean)):
             # Filter failed data sets
             if mean[i] == 0:

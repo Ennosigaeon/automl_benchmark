@@ -565,12 +565,12 @@ def plot_cash_overfitting():
 
 
 def plot_framework_overfitting():
-    labels = ['Random Search', 'auto-sklearn', 'TPOT', 'ATM', 'hyperopt-sklearn']
+    labels = ['Random Search', 'auto-sklearn', 'TPOT', 'ATM', 'hyperopt-sklearn', 'H2O AutoML']
     with open('assets/overfitting_frameworks.pkl', 'rb') as f:
         overfitting = pickle.load(f)
 
     data = [np.array(overfitting['random']), np.array(overfitting['auto-sklearn']), np.array(overfitting['tpot']),
-            np.array(overfitting['atm']), np.array(overfitting['hpsklearn'])]
+            np.array(overfitting['atm']), np.array(overfitting['hpsklearn']), np.array(overfitting['h2o'])]
 
     fig, ax = plt.subplots()
     fig.set_size_inches(20, 5)
