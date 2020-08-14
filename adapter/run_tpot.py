@@ -1,5 +1,6 @@
 from typing import List
 
+import sklearn
 from sklearn.pipeline import Pipeline
 from tpot import TPOTClassifier
 
@@ -13,20 +14,25 @@ def setup():
     pass
 
 
-def main(fold, timeout: int, run_timeout: int, jobs: int) -> float:
+def main(fold, timeout: int, run_timeout: int, jobs: int, score: bool = True):
     setup()
     X_train, y_train, X_test, y_test = fold
 
     pipeline_optimizer = TPOTClassifier(
         max_time_mins=timeout / 60,
         max_eval_time_mins=run_timeout / 60,
-        scoring='accuracy',
+        scoring='roc_auc',
         n_jobs=jobs,
         verbosity=1
     )
     pipeline_optimizer.fit(X_train, y_train)
     print(pipeline_optimizer.fitted_pipeline_)
-    return 1 - pipeline_optimizer.score(X_test, y_test)
+    if score:
+        predictions = pipeline_optimizer.predict(X_test)
+        return 1 - sklearn.metrics.accuracy_score(y_test, predictions)
+    else:
+        predictions = pipeline_optimizer.predict_proba(X_test)
+        return sklearn.metrics.roc_auc_score(y_test, predictions[:, 1]), pipeline_optimizer
 
 
 # noinspection PyUnresolvedReferences

@@ -1,7 +1,7 @@
 import random
 import shutil
 import tempfile
-from typing import List
+from typing import List, Optional
 
 import h2o
 import numpy as np
@@ -23,7 +23,7 @@ def setup():
     pass
 
 
-def main(fold, bm: OpenMLBenchmark, timeout: int, run_timeout: int, jobs: int) -> float:
+def main(fold, bm: OpenMLBenchmark, timeout: int, run_timeout: int, jobs: int, score: bool = True) -> float:
     try:
         log_dir = tempfile.mkdtemp()
 
@@ -46,7 +46,6 @@ def main(fold, bm: OpenMLBenchmark, timeout: int, run_timeout: int, jobs: int) -
                         max_runtime_secs_per_model=run_timeout)
         aml.train(y='class', training_frame=train)
 
-        predictions = aml.leader.predict(test)
         params = aml.leader.get_params()
         del params['model_id']
         del params['training_frame']
@@ -56,9 +55,20 @@ def main(fold, bm: OpenMLBenchmark, timeout: int, run_timeout: int, jobs: int) -
             params[key] = params[key]['actual_value']
 
         print(aml.leader.algo, '(', params, ')')
-        return 1 - sklearn.metrics.accuracy_score(y_test, predictions['predict'].as_data_frame())
+        if score:
+            predictions = aml.leader.predict(test)
+            return 1 - sklearn.metrics.accuracy_score(y_test, predictions['predict'].as_data_frame())
+        else:
+            predictions = aml.leader.predict(test)
+            return sklearn.metrics.roc_auc_score(y_test, predictions['predict'].as_data_frame()), aml.leader
     finally:
-        h2o.cluster().shutdown()
+        if score:
+            _cleanup(log_dir)
+
+
+def _cleanup(log_dir: Optional[str]):
+    h2o.cluster().shutdown()
+    if log_dir is not None:
         shutil.rmtree(log_dir)
 
 

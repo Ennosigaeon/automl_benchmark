@@ -42,7 +42,8 @@ def setup():
         pass
 
 
-def main(fold, bm: OpenMLBenchmark, timeout: int, run_timeout: int, jobs: int, random: bool) -> float:
+def main(fold, bm: OpenMLBenchmark, timeout: int, run_timeout: int, jobs: int, random: bool,
+         score: bool = True) -> float:
     def get_spawn_classifier(X_train, y_train, tmp_folder, output_folder, seed0):
         def spawn_classifier(seed, dataset_name):
             # Use the initial configurations from meta-learning only in one out of
@@ -83,7 +84,7 @@ def main(fold, bm: OpenMLBenchmark, timeout: int, run_timeout: int, jobs: int, r
 
         return spawn_classifier
 
-    name = bm.get_meta_information()['name']
+    name = bm.task_id
 
     setup()
     X_train, y_train, X_test, y_test = fold
@@ -134,9 +135,14 @@ def main(fold, bm: OpenMLBenchmark, timeout: int, run_timeout: int, jobs: int, r
         ensemble_size=ensemble_size
     )
 
-    predictions = automl.predict(X_test)
     print(automl.show_models())
-    return 1 - sklearn.metrics.accuracy_score(y_test, predictions)
+    if score:
+        predictions = automl.predict(X_test)
+        return 1 - sklearn.metrics.accuracy_score(y_test, predictions)
+    else:
+        automl.target_type = 'multilabel-indicator'
+        predictions = automl.predict_proba(X_test)
+        return sklearn.metrics.roc_auc_score(y_test, predictions[:, 1]), automl
 
 
 # noinspection PyUnresolvedReferences

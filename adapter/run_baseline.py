@@ -15,7 +15,7 @@ def setup():
     pass
 
 
-def main(fold, dummy: bool) -> float:
+def main(fold, dummy: bool, score: bool = True) -> float:
     setup()
     X_train, y_train, X_test, y_test = fold
     X_train = SimpleImputer().fit_transform(X_train)
@@ -24,5 +24,11 @@ def main(fold, dummy: bool) -> float:
     estimator = DummyClassifier() if dummy else RandomForestClassifier()
     estimator.fit(X_train, y_train)
 
-    predictions = estimator.predict(X_test)
-    return 1 - sklearn.metrics.accuracy_score(y_test, predictions)
+    if score:
+        predictions = estimator.predict(X_test)
+        return 1 - sklearn.metrics.accuracy_score(y_test, predictions)
+    else:
+        # predictions = estimator.predict_proba(X_test)
+        # return sklearn.metrics.log_loss(y_test, predictions), estimator
+        predictions = estimator.predict_proba(X_test)
+        return sklearn.metrics.roc_auc_score(y_test, predictions[:, 1]), estimator

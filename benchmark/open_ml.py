@@ -186,6 +186,116 @@ def fix_no_tags(result_dict, tag):
         raise TypeError()
 
 
+class OpenMLCSVBenchmark(OpenMLBenchmark):
+
+    def __init__(self, train_file: str, target_column: str, test_file: str, n_splits: int = 4):
+        super().__init__(-1, load=False)
+
+        X_train = pd.read_csv(train_file)
+        y_train = X_train[target_column]
+        X_train.drop(target_column, axis=1, inplace=True)
+
+        X_test = pd.read_csv(test_file)
+        self.names = X_test.columns
+        self.column_names = list(self.names)
+        self.categorical = [False] * len(X_test)
+        self.X_test = X_test.values
+
+        X = X_train.values
+        y = y_train.values.__array__()
+        self.y = LabelEncoder().fit_transform(y)
+        self.X = X.astype(np.float64)
+
+        shuffle = self.rng.permutation(X.shape[0])
+        self.X = self.X[shuffle[:]]
+        self.y = self.y[shuffle[:]]
+
+        self.folds = []
+        # kf = KFold(n_splits=n_splits)
+        # for train_index, test_index in kf.split(self.X):
+        #     X_train, X_test = self.X[train_index], self.X[test_index]
+        #     y_train, y_test = self.y[train_index], self.y[test_index]
+        #
+        #     ls = [X_train, y_train, X_test, y_test]
+        #     self.folds.append(ls)
+        X_train, X_test, y_train, y_test = train_test_split(self.X, self.y, test_size=0.3)
+        ls = [X_train, y_train, X_test, y_test]
+        self.folds.append(ls)
+
+    def format_output(self, predictions, algorithm: str, fold: int):
+        pass
+
+
+class OttoBenchmark(OpenMLCSVBenchmark):
+
+    def __init__(self, n_splits: int = 4):
+        super().__init__('assets/otto/train.csv', 'target', 'assets/otto/test.csv', n_splits)
+
+        # Remove index column
+        for i in range(len(self.folds)):
+            self.folds[i][0] = self.folds[i][0][:, 1:]
+            self.folds[i][2] = self.folds[i][2][:, 1:]
+
+        self.names = self.names[1:]
+        self.column_names = self.column_names[1:]
+
+        self.indices = self.X_test[:, 0]
+        self.X_test = self.X_test[:, 1:]
+
+    def format_output(self, predictions, algorithm: str, fold: int):
+        res = np.zeros((len(predictions), 10))
+        res[:, 0] = self.indices
+
+        if predictions.ndim == 1:
+            for row, column in enumerate(predictions):
+                res[row, column + 1] = 1
+        else:
+            res[:, 1:] = predictions
+
+        df = pd.DataFrame(
+            columns=['id', 'Class_1', 'Class_2', 'Class_3', 'Class_4', 'Class_5', 'Class_6', 'Class_7', 'Class_8',
+                     'Class_9'],
+            data=res)
+        df['id'] = df['id'].astype(int)
+
+        file = 'assets/otto/{}/{}_{}.csv'.format(algorithm, algorithm, fold)
+        df.to_csv(file, index=False)
+
+        print(predictions)
+
+
+class SantanderBenchmark(OpenMLCSVBenchmark):
+
+    def __init__(self, n_splits: int = 4):
+        super().__init__('assets/santander/train.csv', 'TARGET', 'assets/santander/test.csv', n_splits)
+
+        # Remove index column
+        for i in range(len(self.folds)):
+            self.folds[i][0] = self.folds[i][0][:, 1:]
+            self.folds[i][2] = self.folds[i][2][:, 1:]
+
+        self.names = self.names[1:]
+        self.column_names = self.column_names[1:]
+
+        self.indices = self.X_test[:, 0]
+        self.X_test = self.X_test[:, 1:]
+
+    def format_output(self, predictions, algorithm: str, fold: int):
+        res = np.zeros((len(predictions), 2))
+        res[:, 0] = self.indices
+        res[:, 1] = predictions[:, 1]
+
+        df = pd.DataFrame(
+            columns=['ID', 'TARGET'],
+            data=res)
+        df['ID'] = df['ID'].astype(int)
+
+        file = 'assets/santander/{}/{}_{}.csv'.format(algorithm, algorithm, fold)
+        df.to_csv(file, index=False)
+
+        print(predictions)
+
+
 openml.study.functions._multitag_to_list = fix_no_tags
 
 

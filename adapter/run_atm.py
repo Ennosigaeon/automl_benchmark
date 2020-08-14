@@ -6,6 +6,8 @@ import time
 
 import numpy as np
 import pandas as pd
+import sklearn
+from atm import ATM, Model
 from sklearn.pipeline import Pipeline
 from typing import List
 
@@ -25,7 +27,7 @@ def setup():
     os.mkdir('/tmp/atm/')
 
 
-def main(fold, bm: OpenMLBenchmark, timeout: int, jobs: int) -> float:
+def main(fold, bm: OpenMLBenchmark, timeout: int, jobs: int, score: bool = True) -> float:
     setup()
     X_train, y_train, X_test, y_test = fold
 
@@ -65,8 +67,24 @@ def main(fold, bm: OpenMLBenchmark, timeout: int, jobs: int) -> float:
     proc = subprocess.Popen(cmd, shell=True)
     proc.wait()
 
-    # Results are stored in database
-    return 1
+    atm = ATM()
+    dataruns = atm.db.get_dataruns(ignore_complete=False, ignore_running=True, ignore_pending=True)
+    datarun = max(dataruns, key=lambda d: d.id)
+    best = datarun.get_best_classifier()
+
+    hp = atm.db.get_hyperpartition(best.hyperpartition_id)
+    model = Model(hp.method, best.hyperparameter_values, '', '')
+    model._make_pipeline()
+    pipeline = model.pipeline
+
+    pipeline.fit(X_train, y_train)
+
+    if score:
+        predictions = pipeline.predict(X_test)
+        return 1 - sklearn.metrics.accuracy_score(y_test, predictions)
+    else:
+        predictions = pipeline.predict_proba(X_test)
+        return sklearn.metrics.roc_auc_score(y_test, predictions[:, 1]), pipeline
 
 
 # noinspection PyUnresolvedReferences

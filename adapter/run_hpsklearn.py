@@ -17,7 +17,7 @@ def setup():
     pass
 
 
-def main(fold, timeout: int, run_timeout: int):
+def main(fold, timeout: int, run_timeout: int, score: bool = True):
     def run():
         setup()
         X_train, y_train, X_test, y_test = fold
@@ -26,15 +26,33 @@ def main(fold, timeout: int, run_timeout: int):
             classifier=hpsklearn.components.any_classifier('clf'),
             algo=hyperopt.tpe.suggest,
             trial_timeout=run_timeout,
+            loss_fn=sklearn.metrics.roc_auc_score,
             max_evals=-1,
             timeout=timeout,
             seed=int(time.time())
         )
         estimator.fit(X_train, y_train)
-        predictions = estimator.predict(X_test)
 
-        print(estimator.best_model())
-        return 1 - sklearn.metrics.accuracy_score(y_test, predictions)
+        pipeline = load_model(str(estimator.best_model()))
+        print(pipeline)
+        pipeline.fit(X_train, y_train)
+        if score:
+            predictions = pipeline.predict(X_test)
+            return 1 - sklearn.metrics.accuracy_score(y_test, predictions)
+        else:
+            try:
+                predictions = pipeline.predict_proba(X_test)
+            except Exception as e:
+                if isinstance(e, KeyboardInterrupt):
+                    raise e
+                traceback.print_exc()
+
+                import numpy as np
+                tmp = pipeline.predict(X_test)
+                predictions = np.zeros((len(tmp), 2))
+                predictions[:, 1] = tmp
+
+            return sklearn.metrics.roc_auc_score(y_test, predictions[:, 1]), pipeline
 
     for j in range(100):
         print('Attempt {}...'.format(j))
@@ -43,6 +61,7 @@ def main(fold, timeout: int, run_timeout: int):
         except Exception as e:
             if isinstance(e, KeyboardInterrupt):
                 raise e
+            traceback.print_exc()
     else:
         traceback.print_exc()
         return 1
