@@ -470,3 +470,4 @@ if __name__ == '__main__':
     calculate_cash_overfitting()
     plot_cash_overfitting()
     plot_framework_overfitting()
+    comparison_human()
