@@ -26,8 +26,7 @@ def plot_cash_incumbent(x, x_std, labels: list):
     matplotlib.rcParams.update({'font.size': 12})
 
     fig, ax = plt.subplots()
-    fig.set_size_inches(20, 6)
-    fig.set_dpi(100)
+    fig.set_size_inches(20, 7)
 
     axins = ax.inset_axes([0.66, 0.525, 0.325, 0.31])
 
@@ -67,7 +66,6 @@ def plot_cash_incumbent(x, x_std, labels: list):
 
     fig, ax = plt.subplots()
     fig.set_size_inches(20, 6)
-    fig.set_dpi(100)
 
     for idx in range(len(labels)):
         ax.plot(ranks.T[:, idx], label=labels[idx], linewidth=2.0)
@@ -134,7 +132,7 @@ def print_pairwise_performance(x, labels: list):
     print(np.apply_along_axis(lambda r: rankdata(r, method='min'), axis=1, arr=1 - x).mean(axis=0))
 
 
-def plot_dataset_performance(values, minimum, maximum, labels: list, tasks: list, rows: int = 10, cash: bool = False):
+def plot_dataset_performance(values, minimum, maximum, labels: list, tasks: list, rows: int = 8, cash: bool = False):
     from evaluation.scripts import Dataset
     with open('assets/ds.pkl', 'rb') as f:
         datasets: Dict[int, Dataset] = pickle.load(f)
@@ -251,7 +249,6 @@ def plot_overall_performance(x: List[List[List[float]]], labels: list, cash: boo
     # Create box plots
     fig, ax = plt.subplots()
     fig.set_size_inches(20, 8)
-    fig.set_dpi(75)
 
     zoom = 10
     values = [[item for sublist in l for item in sublist] for l in x]
@@ -474,7 +471,6 @@ def plot_branin():
 
     fig = plt.figure()
     fig.set_size_inches(10, 8)
-    fig.set_dpi(250)
     ax = fig.gca(projection='3d')
 
     # Make data.
@@ -506,8 +502,7 @@ def plot_branin():
 
 def plot_successive_halving():
     fig, ax = plt.subplots()
-    fig.set_size_inches(10, 7)
-    fig.set_dpi(250)
+    fig.set_size_inches(16, 8)
 
     ax.plot([0, 0.125, 0.25, 0.5, 1], [1, 0.40, 0.27, 0.2, 0.16])
 
@@ -546,8 +541,7 @@ def plot_cash_overfitting():
         data.append(np.array(overfitting[hpo]))
 
     fig, ax = plt.subplots()
-    fig.set_size_inches(20, 5)
-    fig.set_dpi(75)
+    fig.set_size_inches(20, 8)
 
     ax.boxplot(data,
                notch=True,
@@ -573,8 +567,7 @@ def plot_framework_overfitting():
             np.array(overfitting['atm']), np.array(overfitting['hpsklearn']), np.array(overfitting['h2o'])]
 
     fig, ax = plt.subplots()
-    fig.set_size_inches(20, 5)
-    fig.set_dpi(75)
+    fig.set_size_inches(20, 8)
 
     ax.boxplot(data,
                notch=True,
