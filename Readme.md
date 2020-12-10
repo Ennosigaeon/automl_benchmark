@@ -1,5 +1,5 @@
 # AutoML-Benchmark
-This project evaluates the performance of various AutoML frameworks on different benchmark datasets. A detailed description of the evaluated frameworks and detailed evaluation results are available [here](https://arxiv.org/abs/1904.12054).
+This project evaluates the performance of various AutoML frameworks on different benchmark datasets. A detailed description of the evaluated frameworks and detailed evaluation results is available in our [survey paper](https://arxiv.org/abs/1904.12054). The source code is available on [GitHub](https://github.com/Ennosigaeon/automl_benchmark).
 
 ## Installation
 - Install swig `sudo apt install swig`
