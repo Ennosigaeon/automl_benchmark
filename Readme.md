@@ -5,7 +5,7 @@ This project evaluates the performance of various AutoML frameworks on different
 - Install swig `sudo apt install swig`
 - Install build-essential `sudo apt install build-essential`
 - Install auto-sklearn requirements `curl https://raw.githubusercontent.com/automl/auto-sklearn/master/requirements.txt | xargs -n 1 -L 1 pip3 install`
-- Install hpolib2 `pip3 install git+https://github.com/automl/HPOlib2`
+- Install hpolib2 `pip3 install git+https://github.com/automl/HPOlib1.5.git`
 - Install mysql client `sudo apt install libmysqlclient-dev`
 - Install all other requirements via `pip3 install -r requirements.txt`
 - Install ATM (https://github.com/HDI-Project/ATM)
