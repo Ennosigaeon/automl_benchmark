@@ -51,8 +51,10 @@ def plot_cash_incumbent(x, x_std, labels: list):
     mark_inset(ax, axins, loc1=1, loc2=2, fc="none", ec="0.5")
 
     ax.set_xscale('log')
-    ax.set_xlabel('Iteration')
-    ax.set_ylabel('Normalized Performance')
+    ax.set_xlabel('Iteration', fontsize=15)
+    ax.set_ylabel('Normalized Performance', fontsize=15)
+    ax.tick_params(axis='both', which='major', labelsize=12)
+    ax.tick_params(axis='both', which='minor', labelsize=12)
     ax.legend(loc='lower right')
     plt.savefig('evaluation/plots/cash-incumbent.pdf', bbox_inches='tight')
 
@@ -99,8 +101,10 @@ def plot_pairwise_performance(x, labels: list, cash: bool = False):
         ax.autoscale(False)
         ax.plot([-5, 5], [-5, 5], zorder=-1000, c=AXIS_COLOR)
 
-        ax.set_xlabel(labels[i], fontsize=12)
-        ax.set_ylabel(labels[j], fontsize=12)
+        ax.set_xlabel(labels[i], fontsize=20)
+        ax.set_ylabel(labels[j], fontsize=20)
+        ax.tick_params(axis='both', which='major', labelsize=18)
+        ax.tick_params(axis='both', which='minor', labelsize=18)
 
         ax.set_xlim([0.05, 1.05])
         ax.set_ylim([0.05, 1.05])
@@ -283,15 +287,18 @@ def plot_overall_performance(x: List[List[List[float]]], labels: list, cash: boo
     ax.plot([-10, 10], [zoom, zoom], zorder=-1000, c=AXIS_COLOR)
 
     ax.yaxis.grid(True)
-    ax.set_ylabel('Normalized Performance')
+    ax.set_ylabel('Normalized Performance', fontsize=15)
+
+    ax.tick_params(axis='both', which='major', labelsize=12)
+    ax.tick_params(axis='both', which='minor', labelsize=12)
 
     if cash:
-        ax.set_title('Performance of CASH Solvers')
+        ax.set_title('Performance of CASH Solvers', fontsize=15)
         ax.set_yticks([-2.5, -0.5, 0, zoom / 2, zoom] + [2 * i + 0.5 + zoom for i in range(0, 6)])
         ax.set_yticklabels([-2, 0, 0.5, 1, 1.5] + [2 * i for i in range(1, 7)])
         plt.savefig('evaluation/plots/performance-cash.pdf', bbox_inches='tight')
     else:
-        ax.set_title('Performance of AutoML Frameworks')
+        ax.set_title('Performance of AutoML Frameworks', fontsize=15)
         ax.set_yticks([-4.5, -2.5, -0.5, 0, zoom / 2, zoom] + [2 * i + 0.5 + zoom for i in range(0, 5)])
         ax.set_yticklabels([-4, -2, 0, 0.5, 1, 1.5] + [2 * i for i in range(1, 6)])
         plt.savefig('evaluation/plots/performance-automl-frameworks.pdf', bbox_inches='tight')
@@ -524,9 +531,12 @@ def plot_successive_halving():
 
     ax.set_ylim([0, 1])
     ax.set_xlim([0, 1])
-    ax.set_ylabel('Loss')
-    ax.set_xlabel('Budget')
+    ax.set_ylabel('Loss', fontsize=24)
+    ax.set_xlabel('Budget', fontsize=24)
     ax.set_xticks([0.125, 0.25, 0.5, 1.0], ['12.5%', '25%', '50%', '100%'])
+
+    ax.tick_params(axis='both', which='major', labelsize=24)
+    ax.tick_params(axis='both', which='minor', labelsize=24)
 
     plt.savefig('evaluation/plots/successive_halving.pdf', bbox_inches='tight')
 
@@ -552,8 +562,11 @@ def plot_cash_overfitting():
                            'markeredgecolor': FACE_COLOR, 'markersize': 5})
 
     ax.yaxis.grid(True)
-    ax.set_ylabel('Accuracy Difference')
-    ax.set_title('Learning-Test Overfit of CASH Solvers')
+    ax.set_ylabel('Accuracy Difference', fontsize=15)
+    ax.set_title('Learning-Test Overfit of CASH Solvers', fontsize=15)
+
+    ax.tick_params(axis='both', which='major', labelsize=15)
+    ax.tick_params(axis='both', which='minor', labelsize=15)
 
     plt.savefig('evaluation/plots/overfitting-cash.pdf', bbox_inches='tight')
 
@@ -578,7 +591,10 @@ def plot_framework_overfitting():
                            'markeredgecolor': FACE_COLOR, 'markersize': 5})
 
     ax.yaxis.grid(True)
-    ax.set_ylabel('Accuracy Difference')
-    ax.set_title('Learning-Test Overfit of AutoML Frameworks')
+    ax.set_ylabel('Accuracy Difference', fontsize=15)
+    ax.set_title('Learning-Test Overfit of AutoML Frameworks', fontsize=15)
+
+    ax.tick_params(axis='both', which='major', labelsize=15)
+    ax.tick_params(axis='both', which='minor', labelsize=15)
 
     plt.savefig('evaluation/plots/overfitting-frameworks.pdf', bbox_inches='tight')
