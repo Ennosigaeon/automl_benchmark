@@ -5,7 +5,7 @@ ConfigSpace==0.4.9
 hpbandster==0.7.4
 humanfriendly
 hyperopt==0.1.2
-matplotlib
+matplotlib==3.0.3
 networkx
 numpy==1.22.0
 openml==0.9.0
