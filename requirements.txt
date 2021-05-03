@@ -1,4 +1,4 @@
-h2o
+h2o==3.26.0.8
 atm==0.2.2
 auto-sklearn==0.5.2
 ConfigSpace==0.4.9
