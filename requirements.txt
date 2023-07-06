@@ -15,6 +15,6 @@ pybind11==2.2.4
 pymongo
 pyrfr==0.8.0
 scikit-learn==0.20.3
-scipy==1.2.1
+scipy==1.10.0
 smac==0.10.0
 tpot==0.10.2
