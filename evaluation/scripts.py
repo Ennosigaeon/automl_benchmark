@@ -466,7 +466,7 @@ if __name__ == '__main__':
     # print_data_set_stats()
     # load_atm_results()
     load_file_results('/mnt/c/local/results/AutoML Benchmark', 'h2o')
-    calculate_framework_overfitting('/mnt/c/local/results/AutoML Benchmark')
+    calculate_framework_overfitting('/mnt/c/Users/usimzoller/Dropbox/phd/publication/Benchmark and Survey of Automated Machine Learning Frameworks - JAIR/results/AutoML Benchmark/')
     calculate_cash_overfitting()
     plot_cash_overfitting()
     plot_framework_overfitting()

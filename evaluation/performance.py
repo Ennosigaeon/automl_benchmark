@@ -1390,7 +1390,7 @@ def print_automl_framework_results():
             if tmp.mean() > 0:
                 std.append(tmp.std())
                 mean.append(tmp.mean())
-        print(labels[i], np.array(std).mean(), np.array(mean).std())
+        print(labels[i], '{:.2f}'.format(np.array(mean).mean()), '{:.2f}'.format(np.array(mean).std()))
 
     plot_dataset_performance(results[2:], minimum, maximum, list(labels[2:]), tasks, cash=False)
     plot_overall_performance(normalized[2:], labels[2:], cash=False)
